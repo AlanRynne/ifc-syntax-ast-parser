@@ -1,4 +1,4 @@
-@include "mooTokens.ne"
+@include "tokens.ne"
 @lexer lexer
 
 main -> line:+ {% id %}

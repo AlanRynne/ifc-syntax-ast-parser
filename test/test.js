@@ -1,5 +1,5 @@
 const nearley = require("/usr/local/lib/node_modules/nearley");
-const grammar = require("../out/ifcGrammar");
+const grammar = require("../src/index");
 const fs = require('fs')
 const readline = require('readline');
 
