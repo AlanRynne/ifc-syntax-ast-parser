@@ -32,7 +32,7 @@ let lexer = moo.compile({
     iso: 'ISO',
     end: 'END',
     word: /[a-zA-Z0-9\-]+/,
-
+    myError: moo.error
 })
 
 %}

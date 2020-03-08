@@ -36,11 +36,19 @@ let lexer = moo.compile({
     iso: 'ISO',
     end: 'END',
     word: /[a-zA-Z0-9\-]+/,
-
+    myError: moo.error
 })
 
 
 
+
+function createTag(name,value) {
+    return {
+        type: 'tag',
+        name: name,
+        value: value
+    }
+}
 
 function extractPair(kv, output) {
     if(kv[0]) { output[kv[0]] = kv[1]; }
@@ -71,92 +79,49 @@ function extractArray(d) {
 var grammar = {
     Lexer: lexer,
     ParserRules: [
-    {"name": "main$ebnf$1", "symbols": ["line"]},
-    {"name": "main$ebnf$1", "symbols": ["main$ebnf$1", "line"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "main", "symbols": ["main$ebnf$1"], "postprocess": id},
-    {"name": "line", "symbols": ["content", "_", {"literal":";"}, "_"], "postprocess": (data) => data[0]},
-    {"name": "content$subexpression$1", "symbols": ["headTags"]},
-    {"name": "content$subexpression$1", "symbols": ["entity"]},
-    {"name": "content$subexpression$1", "symbols": ["headEntity"]},
-    {"name": "content", "symbols": ["content$subexpression$1"], "postprocess": (data) => data[0][0]},
-    {"name": "entity", "symbols": ["ifcRef", "_", {"literal":"="}, "_", "ifcClass", "ifcInput"], "postprocess": 
-        function(data){
+    {"name": "main_section$ebnf$1$subexpression$1", "symbols": ["header_section"]},
+    {"name": "main_section$ebnf$1", "symbols": ["main_section$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "main_section$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "main_section$ebnf$2$subexpression$1", "symbols": ["data_section"]},
+    {"name": "main_section$ebnf$2", "symbols": ["main_section$ebnf$2$subexpression$1"], "postprocess": id},
+    {"name": "main_section$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "main_section", "symbols": ["tag_iso_open", {"literal":";"}, "_", "main_section$ebnf$1", "_", "main_section$ebnf$2", "_", "tag_iso_close", {"literal":";"}], "postprocess":  (data) => {
             return {
-                type: "ifcEntity",
-                ref: data[0].value,
-                class: data[4],
-                input: data[5]
+                type: "ifc",
+                header: data[3],
+                data: data[5]
+            };
+        }},
+    {"name": "header_section$ebnf$1$subexpression$1", "symbols": ["_", {"literal":" "}]},
+    {"name": "header_section$ebnf$1", "symbols": ["header_section$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "header_section$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "header_section", "symbols": ["tag_header", "header_section$ebnf$1", "_", "tag_end_sec"], "postprocess":  (data) => { 
+            return {
+                type: "section",
+                name: "header",
+                children: []
             }
-        }
+        }},
+    {"name": "data_section$ebnf$1$subexpression$1", "symbols": ["_", {"literal":" "}]},
+    {"name": "data_section$ebnf$1", "symbols": ["data_section$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "data_section$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "data_section", "symbols": ["tag_data", "data_section$ebnf$1", "_", "tag_end_sec"], "postprocess":  (data) => { 
+            return {
+                type: "section",
+                name: "data",
+                children: []
+            }
+        }},
+    {"name": "tag_header", "symbols": [(lexer.has("header") ? {type: "header"} : header), {"literal":";"}], "postprocess": (data) => data[0]},
+    {"name": "tag_data", "symbols": [(lexer.has("data") ? {type: "data"} : data), {"literal":";"}], "postprocess": (data) => data[0]},
+    {"name": "tag_end_sec", "symbols": [(lexer.has("endSec") ? {type: "endSec"} : endSec), {"literal":";"}], "postprocess": (data) => data[0]},
+    {"name": "tag_iso_open", "symbols": [{"literal":"ISO"}, {"literal":"-"}, "number", {"literal":"-"}, "number"], "postprocess":  
+        (data) => createTag('iso-open', data[2] + "-" + data[4]) 
         },
-    {"name": "headEntity", "symbols": [{"literal":"FILE"}, {"literal":"_"}, "word", "ifcInput"], "postprocess":  
-        function(data) {
-            return {
-                type: data[2],
-                value: data[3]
-            }
-        }
+    {"name": "tag_iso_close", "symbols": [{"literal":"END"}, {"literal":"-"}, "tag_iso_open"], "postprocess": 
+        (data) => createTag('iso-close', data[2].value)
         },
-    {"name": "ifcInput$ebnf$1", "symbols": [{"literal":"("}], "postprocess": id},
-    {"name": "ifcInput$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "ifcInput$ebnf$2", "symbols": [{"literal":")"}], "postprocess": id},
-    {"name": "ifcInput$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "ifcInput", "symbols": ["ifcInput$ebnf$1", "ifcInputList", "ifcInput$ebnf$2"], "postprocess": (data) => data[1]},
-    {"name": "ifcInputList$ebnf$1", "symbols": []},
-    {"name": "ifcInputList$ebnf$1$subexpression$1", "symbols": ["_", {"literal":","}, "_", "ifcInputType"]},
-    {"name": "ifcInputList$ebnf$1", "symbols": ["ifcInputList$ebnf$1", "ifcInputList$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "ifcInputList", "symbols": [{"literal":"("}, "_", "ifcInputType", "ifcInputList$ebnf$1", "_", {"literal":")"}], "postprocess": extractArray},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["star"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["dollar"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["dotWord"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["sqstring"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["ifcRef"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["number"], "postprocess": function(data) {return[{type:"number",value:data[0]}]}},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["ifcClass", "ifcInput"], "postprocess": function(data) {return[{type:"ifcEntity", ref: null, class:data[0], input: data[1]}]}},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["parenIfcInputType"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": ["ifcInputList"]},
-    {"name": "ifcInputType$subexpression$1", "symbols": [{"literal":"("}, {"literal":")"}]},
-    {"name": "ifcInputType", "symbols": ["ifcInputType$subexpression$1"], "postprocess": (data) => data[0][0]},
-    {"name": "parenIfcInputType", "symbols": [{"literal":"("}, "ifcInputType", {"literal":")"}], "postprocess": (data) => data[1]},
-    {"name": "ifcClass", "symbols": [{"literal":"IFC"}, "word"], "postprocess": function(data){ return data[0] + data[1].value;}},
-    {"name": "ifcRef", "symbols": [{"literal":"#"}, (lexer.has("number") ? {type: "number"} : number)], "postprocess": function(d) { return { type: "ifcRef", value: parseFloat(d[1].value) } }},
-    {"name": "fileTags$subexpression$1", "symbols": [(lexer.has("fileDescription") ? {type: "fileDescription"} : fileDescription)]},
-    {"name": "fileTags$subexpression$1", "symbols": [(lexer.has("fileName") ? {type: "fileName"} : fileName)]},
-    {"name": "fileTags$subexpression$1", "symbols": [(lexer.has("fileSchema") ? {type: "fileSchema"} : fileSchema)]},
-    {"name": "fileTags", "symbols": ["fileTags$subexpression$1"], "postprocess": id.text},
-    {"name": "headTags$subexpression$1", "symbols": [(lexer.has("header") ? {type: "header"} : header)]},
-    {"name": "headTags$subexpression$1", "symbols": [(lexer.has("data") ? {type: "data"} : data)]},
-    {"name": "headTags$subexpression$1", "symbols": [(lexer.has("endSec") ? {type: "endSec"} : endSec)]},
-    {"name": "headTags", "symbols": ["headTags$subexpression$1"], "postprocess":  function (data) {
-            return {
-                type: 'tag',
-                name: data[0][0].type
-            }
-        } },
-    {"name": "headTags$subexpression$2", "symbols": ["isoTag"]},
-    {"name": "headTags$subexpression$2", "symbols": ["endIsoTag"]},
-    {"name": "headTags", "symbols": ["headTags$subexpression$2"], "postprocess": (data) => data[0][0]},
-    {"name": "endIsoTag", "symbols": [{"literal":"END"}, {"literal":"-"}, "isoTag"], "postprocess": 
-        function (data) {
-            return {
-                type: 'tag',
-                name: 'endIso',
-                main: data[2].main,
-                sub: data[2].sub
-            }
-        }
-        },
-    {"name": "isoTag", "symbols": [{"literal":"ISO"}, {"literal":"-"}, "number", {"literal":"-"}, "number"], "postprocess": 
-        function (data) {
-            return {
-                type: 'tag',
-                name: 'iso',
-                main: data[2],
-                sub: data[4]
-            }
-        }
-        },
-    {"name": "dotWord", "symbols": [{"literal":"."}, "word", {"literal":"."}], "postprocess": data => { return data[1]}},
+    {"name": "dotted_word", "symbols": [{"literal":"."}, "word", {"literal":"."}], "postprocess": data => { return data[1]}},
     {"name": "star", "symbols": [(lexer.has("star") ? {type: "star"} : star)], "postprocess": function(data){ return { type: "star", value: "*"}}},
     {"name": "dollar", "symbols": [(lexer.has("dollar") ? {type: "dollar"} : dollar)], "postprocess": function(data){ return { type: "dollar", value: "$"}}},
     {"name": "word$subexpression$1", "symbols": [(lexer.has("word") ? {type: "word"} : word)], "postprocess": (data)=>data[0].value},
@@ -186,7 +151,7 @@ var grammar = {
         }
         }
 ]
-  , ParserStart: "main"
+  , ParserStart: "main_section"
 }
 if (typeof module !== 'undefined'&& typeof module.exports !== 'undefined') {
    module.exports = grammar;

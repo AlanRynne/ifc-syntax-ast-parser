@@ -1,99 +1,64 @@
 @include "tokens.ne"
 @lexer lexer
 
-main -> line:+ {% id %}
+# Main rule - Resolves the complete IFC file
+main_section -> tag_iso_open ";" _ (header_section):? _ (data_section):? _ tag_iso_close ";" {% (data) => {
+    return {
+        type: "ifc",
+        header: data[3],
+        data: data[5]
+    };
+}%}
 
-line -> content _ ";" _ {% (data) => data[0] %}
+# ----
+# Header section
+# ----
 
-content -> (headTags | entity | headEntity ) {% (data) => data[0][0] %}
-
-entity -> ifcRef _ "=" _ ifcClass ifcInput {%
-    function(data){
-        return {
-            type: "ifcEntity",
-            ref: data[0].value,
-            class: data[4],
-            input: data[5]
-        }
+# Resolves the complete header of the IFC file
+header_section -> tag_header (_ " "):? _ tag_end_sec {% (data) => { 
+    return {
+        type: "section",
+        name: "header",
+        children: []
     }
+}%}
+
+# ----
+# Data section
+# ----
+
+# Resolves the complete data section of the IFC file
+data_section -> tag_data (_ " "):? _ tag_end_sec {% (data) => { 
+    return {
+        type: "section",
+        name: "data",
+        children: []
+    }
+}%}
+
+# ----
+# Tags
+# ----
+
+tag_header -> %header ";" {% (data) => data[0] %}
+
+tag_data -> %data ";" {% (data) => data[0] %}
+
+tag_end_sec -> %endSec ";" {% (data) => data[0] %}
+
+tag_iso_open -> "ISO" "-" number "-" number{% 
+    (data) => createTag('iso-open', data[2] + "-" + data[4]) 
 %}
 
-headEntity -> "FILE" "_" word ifcInput {% 
-    function(data) {
-        return {
-            type: data[2],
-            value: data[3]
-        }
-    }
+tag_iso_close -> "END" "-" tag_iso_open{%
+    (data) => createTag('iso-close', data[2].value)
 %}
 
-ifcInput -> "(":? ifcInputList ")":? {% (data) => data[1] %}
-
-ifcInputList -> "(" _ ifcInputType ( _ "," _ ifcInputType):* _ ")" {% extractArray %}
-
-ifcInputType -> (
-    star
-    | dollar
-    | dotWord
-    | sqstring 
-    | ifcRef
-    | number {% function(data) {return[{type:"number",value:data[0]}]}%}
-    | ifcClass ifcInput {% function(data) {return[{type:"ifcEntity", ref: null, class:data[0], input: data[1]}]}%}
-    | parenIfcInputType
-    | ifcInputList
-    | "(" ")"
-) {% (data) => data[0][0]%}
-
-parenIfcInputType -> "(" ifcInputType ")" {% (data) => data[1] %}
-
-ifcClass -> "IFC" word {% function(data){ return data[0] + data[1].value;} %}
-
-ifcRef -> "#" %number {% function(d) { return { type: "ifcRef", value: parseFloat(d[1].value) } } %}
-
-
-
-fileTags -> 
-    (%fileDescription
-    | %fileName
-    | %fileSchema) {% id.text %}
-
-headTags -> 
-    ( %header
-    | %data
-    | %endSec ) {% function (data) {
-        return {
-            type: 'tag',
-            name: data[0][0].type
-        }
-    } %}
-    | ( isoTag
-    | endIsoTag ) {% (data) => data[0][0] %}
-
-
-endIsoTag -> "END" "-" isoTag {%
-    function (data) {
-        return {
-            type: 'tag',
-            name: 'endIso',
-            main: data[2].main,
-            sub: data[2].sub
-        }
-    }
-%}
-
-isoTag -> "ISO" "-" number "-" number {%
-    function (data) {
-        return {
-            type: 'tag',
-            name: 'iso',
-            main: data[2],
-            sub: data[4]
-        }
-    }
-%}
-
+# ----
 # Basics
-dotWord -> "." word "." {% data => { return data[1]} %}
+# ----
+
+dotted_word -> "." word "." {% data => { return data[1]} %}
 
 star -> %star {% function(data){ return { type: "star", value: "*"}} %}
 
@@ -122,7 +87,19 @@ strescape -> ["\\/bfnrt] {% id %}
     }
 %}
 
+# ----
+# Helper JS functions
+# ----
+
 @{%
+
+function createTag(name,value) {
+    return {
+        type: 'tag',
+        name: name,
+        value: value
+    }
+}
 
 function extractPair(kv, output) {
     if(kv[0]) { output[kv[0]] = kv[1]; }
