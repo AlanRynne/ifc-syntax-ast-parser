@@ -1,8 +1,10 @@
 @include "tokens.ne"
-@lexer lexer
+@lexer newlexer
+
 
 # Main rule - Resolves the complete IFC file
-main_section -> tag_iso_open ";" _ (header_section):? _ (data_section):? _ tag_iso_close ";" {% (data) => {
+main_section -> tag_iso_open _ (header_section):? _ (data_section):? _ tag_iso_close {% (data) => {
+    console.log("DATA:", data)
     return {
         type: "ifc",
         header: data[3],
@@ -40,18 +42,18 @@ data_section -> tag_data (_ " "):? _ tag_end_sec {% (data) => {
 # Tags
 # ----
 
-tag_header -> %header ";" {% (data) => data[0] %}
+tag_header -> %headertag %eol {% (data) => data[0] %}
 
-tag_data -> %data ";" {% (data) => data[0] %}
+tag_data -> %datatag %eol {% (data) => data[0] %}
 
-tag_end_sec -> %endSec ";" {% (data) => data[0] %}
+tag_end_sec -> %endtag %eol {% (data) => data[0] %}
 
-tag_iso_open -> "ISO" "-" number "-" number{% 
-    (data) => createTag('iso-open', data[2] + "-" + data[4]) 
+tag_iso_open -> %isotag %eol {% 
+    (data) => createTag('iso-open', data[0]) 
 %}
 
-tag_iso_close -> "END" "-" tag_iso_open{%
-    (data) => createTag('iso-close', data[2].value)
+tag_iso_close -> %isoclosetag %eol {%
+    (data) => createTag('iso-close', data[0])
 %}
 
 # ----

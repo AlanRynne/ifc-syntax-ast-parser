@@ -5,6 +5,34 @@ function id(x) { return x[0]; }
 
 const moo = require('moo')
 
+let newlexer = moo.states({
+    // Rules that apply to every state.
+    $all: {
+        eol: {match: /;\s*/, lineBreaks: true},
+        space: {match: /\s+/, lineBreaks: true},
+        ifcError: moo.error
+    },
+    // Main rules
+    main: {
+        isotag: {match: /ISO-\d\d\d\d\d-\d\d/, value: x=> x.slice(4,0)},
+        isoclosetag: {match: /END-ISO-\d\d\d\d\d-\d\d/, value: x=> x.slice(8,0)},
+        headertag: {match: /HEADER/, lineBreaks: true, push: 'header'},
+        datatag: {match: /DATA/, lineBreaks: true, push: 'header'},
+    },
+    // "HEADER" section
+    header: {
+        include: ['endsec'],
+    },
+    // "DATA" section
+    data: {
+        include: ['endsec'],
+    },
+    // Close section tag "ENDSEC"
+    endsec: {
+        endtag: {match: /ENDSEC/, pop: true},
+    },
+})
+
 let lexer = moo.compile({
     space: {match: /\s+/, lineBreaks: true},
     number: /(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)?(?:\.[eE][-+]?[0-9]+)?\b/,
@@ -77,7 +105,7 @@ function extractArray(d) {
 }
 
 var grammar = {
-    Lexer: lexer,
+    Lexer: newlexer,
     ParserRules: [
     {"name": "main_section$ebnf$1$subexpression$1", "symbols": ["header_section"]},
     {"name": "main_section$ebnf$1", "symbols": ["main_section$ebnf$1$subexpression$1"], "postprocess": id},
@@ -85,7 +113,8 @@ var grammar = {
     {"name": "main_section$ebnf$2$subexpression$1", "symbols": ["data_section"]},
     {"name": "main_section$ebnf$2", "symbols": ["main_section$ebnf$2$subexpression$1"], "postprocess": id},
     {"name": "main_section$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "main_section", "symbols": ["tag_iso_open", {"literal":";"}, "_", "main_section$ebnf$1", "_", "main_section$ebnf$2", "_", "tag_iso_close", {"literal":";"}], "postprocess":  (data) => {
+    {"name": "main_section", "symbols": ["tag_iso_open", "_", "main_section$ebnf$1", "_", "main_section$ebnf$2", "_", "tag_iso_close"], "postprocess":  (data) => {
+            console.log("DATA:", data)
             return {
                 type: "ifc",
                 header: data[3],
@@ -112,31 +141,31 @@ var grammar = {
                 children: []
             }
         }},
-    {"name": "tag_header", "symbols": [(lexer.has("header") ? {type: "header"} : header), {"literal":";"}], "postprocess": (data) => data[0]},
-    {"name": "tag_data", "symbols": [(lexer.has("data") ? {type: "data"} : data), {"literal":";"}], "postprocess": (data) => data[0]},
-    {"name": "tag_end_sec", "symbols": [(lexer.has("endSec") ? {type: "endSec"} : endSec), {"literal":";"}], "postprocess": (data) => data[0]},
-    {"name": "tag_iso_open", "symbols": [{"literal":"ISO"}, {"literal":"-"}, "number", {"literal":"-"}, "number"], "postprocess":  
-        (data) => createTag('iso-open', data[2] + "-" + data[4]) 
+    {"name": "tag_header", "symbols": [(newlexer.has("headertag") ? {type: "headertag"} : headertag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": (data) => data[0]},
+    {"name": "tag_data", "symbols": [(newlexer.has("datatag") ? {type: "datatag"} : datatag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": (data) => data[0]},
+    {"name": "tag_end_sec", "symbols": [(newlexer.has("endtag") ? {type: "endtag"} : endtag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": (data) => data[0]},
+    {"name": "tag_iso_open", "symbols": [(newlexer.has("isotag") ? {type: "isotag"} : isotag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess":  
+        (data) => createTag('iso-open', data[0]) 
         },
-    {"name": "tag_iso_close", "symbols": [{"literal":"END"}, {"literal":"-"}, "tag_iso_open"], "postprocess": 
-        (data) => createTag('iso-close', data[2].value)
+    {"name": "tag_iso_close", "symbols": [(newlexer.has("isoclosetag") ? {type: "isoclosetag"} : isoclosetag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": 
+        (data) => createTag('iso-close', data[0])
         },
     {"name": "dotted_word", "symbols": [{"literal":"."}, "word", {"literal":"."}], "postprocess": data => { return data[1]}},
-    {"name": "star", "symbols": [(lexer.has("star") ? {type: "star"} : star)], "postprocess": function(data){ return { type: "star", value: "*"}}},
-    {"name": "dollar", "symbols": [(lexer.has("dollar") ? {type: "dollar"} : dollar)], "postprocess": function(data){ return { type: "dollar", value: "$"}}},
-    {"name": "word$subexpression$1", "symbols": [(lexer.has("word") ? {type: "word"} : word)], "postprocess": (data)=>data[0].value},
-    {"name": "word$subexpression$1$ebnf$1$subexpression$1", "symbols": [{"literal":"_"}, (lexer.has("word") ? {type: "word"} : word)]},
+    {"name": "star", "symbols": [(newlexer.has("star") ? {type: "star"} : star)], "postprocess": function(data){ return { type: "star", value: "*"}}},
+    {"name": "dollar", "symbols": [(newlexer.has("dollar") ? {type: "dollar"} : dollar)], "postprocess": function(data){ return { type: "dollar", value: "$"}}},
+    {"name": "word$subexpression$1", "symbols": [(newlexer.has("word") ? {type: "word"} : word)], "postprocess": (data)=>data[0].value},
+    {"name": "word$subexpression$1$ebnf$1$subexpression$1", "symbols": [{"literal":"_"}, (newlexer.has("word") ? {type: "word"} : word)]},
     {"name": "word$subexpression$1$ebnf$1", "symbols": ["word$subexpression$1$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "word$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "word$subexpression$1", "symbols": [(lexer.has("word") ? {type: "word"} : word), "word$subexpression$1$ebnf$1"], "postprocess": extractArray},
+    {"name": "word$subexpression$1", "symbols": [(newlexer.has("word") ? {type: "word"} : word), "word$subexpression$1$ebnf$1"], "postprocess": extractArray},
     {"name": "word", "symbols": ["word$subexpression$1"], "postprocess": function(data){ return { type: "string", value: data[0] }}},
-    {"name": "number$subexpression$1", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
-    {"name": "number$subexpression$1", "symbols": [{"literal":"-"}, (lexer.has("number") ? {type: "number"} : number)]},
+    {"name": "number$subexpression$1", "symbols": [(newlexer.has("number") ? {type: "number"} : number)]},
+    {"name": "number$subexpression$1", "symbols": [{"literal":"-"}, (newlexer.has("number") ? {type: "number"} : number)]},
     {"name": "number$ebnf$1", "symbols": [{"literal":"."}], "postprocess": id},
     {"name": "number$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
     {"name": "number", "symbols": ["number$subexpression$1", "number$ebnf$1"], "postprocess": function(d) { return parseFloat(d[0].join("")) }},
     {"name": "_", "symbols": []},
-    {"name": "_", "symbols": [(lexer.has("space") ? {type: "space"} : space)], "postprocess": function(d) { return null; }},
+    {"name": "_", "symbols": [(newlexer.has("space") ? {type: "space"} : space)], "postprocess": function(d) { return null; }},
     {"name": "sqstring$ebnf$1", "symbols": []},
     {"name": "sqstring$ebnf$1", "symbols": ["sqstring$ebnf$1", "sstrchar"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "sqstring", "symbols": [{"literal":"'"}, "sqstring$ebnf$1", {"literal":"'"}], "postprocess": function(d) {return { type: "string", value: d[1].join("") } }},
