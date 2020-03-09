@@ -4,16 +4,14 @@ const moo = require('moo')
 let newlexer = moo.states({
     // Rules that apply to every state.
     $all: {
-        eol: {match: /;\s*/, lineBreaks: true},
-        space: {match: /\s+/, lineBreaks: true},
-        ifcError: moo.error
+        eol: { match: /;\s?/, error: true},
     },
     // Main rules
     main: {
-        isotag: {match: /ISO-\d\d\d\d\d-\d\d/, value: x=> x.slice(4,0)},
-        isoclosetag: {match: /END-ISO-\d\d\d\d\d-\d\d/, value: x=> x.slice(8,0)},
-        headertag: {match: /HEADER/, lineBreaks: true, push: 'header'},
-        datatag: {match: /DATA/, lineBreaks: true, push: 'header'},
+        isotag: { match: /ISO-\d{5}-\d{2}/, value: x=> x.slice(4) },
+        isoclosetag: { match: /END-ISO-\d{5}-\d{2}/, value: x=> x.slice(8) },
+        headertag: { match: /HEADER/, push: 'header' },
+        datatag: { match: /DATA/, push: 'data' },
     },
     // "HEADER" section
     header: {
@@ -22,10 +20,30 @@ let newlexer = moo.states({
     // "DATA" section
     data: {
         include: ['endsec'],
+        ref: { match: /#\d+/, value: x=> x.slice(1) },
+        assign: { match: "=", push: 'entity'}
+    },
+    // IFC entity declaration
+    entity: {
+        entity_name: { match: /\w+/ },
+        lparen: { match: /\(/, push: 'constructor' },
+        eol: { match: /;\s+/, pop: true },
+    },
+    // Resolves anything inside the constructor parenthesis, including nested parenthesis.
+    constructor: {
+        separator: { match: /,/ },
+        dollar: { match: "$", value: x => null },
+        string: { match: /(?:'|").*(?:'|")/, value: x => x.slice(1,-1)},
+        ref: { match: /#\d+/, value: x=> x.slice(1) },
+        rparen: { match: /\)/, pop: true }
+    },
+    // Resolves anything inside a parenthesis that is not the constructor parenthesis.
+    parens: {
+        rparen: { match: /\)/, pop: true }
     },
     // Close section tag "ENDSEC"
     endsec: {
-        endtag: {match: /ENDSEC/, pop: true},
+        endtag: { match: /ENDSEC/, pop: true },
     },
 })
 

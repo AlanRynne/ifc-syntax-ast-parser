@@ -3,13 +3,14 @@
 
 
 # Main rule - Resolves the complete IFC file
-main_section -> tag_iso_open _ (header_section):? _ (data_section):? _ tag_iso_close {% (data) => {
-    console.log("DATA:", data)
+main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close {% (data) => {
     return {
-        type: "ifc",
-        header: data[3],
-        data: data[5]
-    };
+        type: "step",
+        version: data[0].value,
+        start: data[0].offset,
+        end: data[6].offset + data[6].text.length,
+        children: [data[2], data[4]]
+    } 
 }%}
 
 # ----
@@ -17,12 +18,15 @@ main_section -> tag_iso_open _ (header_section):? _ (data_section):? _ tag_iso_c
 # ----
 
 # Resolves the complete header of the IFC file
-header_section -> tag_header (_ " "):? _ tag_end_sec {% (data) => { 
-    return {
-        type: "section",
+header_section -> tag_header tag_end_sec {% (data) => {
+    let headerObj = {
+        type: "sec",
         name: "header",
+        start: data[0].offset,
+        end: data[1].offset + data[1].text.length,
         children: []
     }
+    return headerObj;
 }%}
 
 # ----
@@ -30,70 +34,105 @@ header_section -> tag_header (_ " "):? _ tag_end_sec {% (data) => {
 # ----
 
 # Resolves the complete data section of the IFC file
-data_section -> tag_data (_ " "):? _ tag_end_sec {% (data) => { 
-    return {
-        type: "section",
+data_section -> tag_data _ (data_entities):? _ tag_end_sec {% (data) => {
+    let dataObj = {
+        type: "sec",
         name: "data",
-        children: []
+        start: data[0].offset,
+        end: data[4].offset + data[4].text.length,
+        children: data[2][0]
+    }
+    return dataObj;
+}%}
+
+data_entities -> data_entity (_ data_entity):* {% (data) => {
+    var d = [data[0]]
+    for(let i in data[1]){
+        d.push(data[1][i][1])
+    }
+    return d;
+} %}
+
+data_entity -> %ref %assign data_entity_constructor %eol {% (data) => {
+    return {
+        type: "var",
+        left: data[0],
+        right: data[2]
+    }
+} %}
+
+data_entity_constructor -> %entity_name %lparen constructor_values %rparen {% (data) => {
+    return {
+        type: 'ctor',
+        name: data[0],
+        input: data[2]
     }
 }%}
+
+constructor_values -> constructor_value (%separator constructor_value):* {% (data) => {
+    var d = [data[0][0]];
+    for(let i in data[1]) {
+        d.push(data[1][i][1][0])
+    }
+    return d;
+}%}
+
+constructor_value -> (%dollar | %string | %ref) {% first %}
 
 # ----
 # Tags
 # ----
 
-tag_header -> %headertag %eol {% (data) => data[0] %}
+tag_header -> %headertag %eol _ {% first %}
 
-tag_data -> %datatag %eol {% (data) => data[0] %}
+tag_data -> %datatag %eol {% first %}
 
-tag_end_sec -> %endtag %eol {% (data) => data[0] %}
+tag_end_sec -> %endtag %eol {% first %}
 
-tag_iso_open -> %isotag %eol {% 
-    (data) => createTag('iso-open', data[0]) 
-%}
+tag_iso_open -> %isotag %eol {% first %}
 
-tag_iso_close -> %isoclosetag %eol {%
-    (data) => createTag('iso-close', data[0])
-%}
+tag_iso_close -> %isoclosetag %eol {% first %}
 
 # ----
 # Basics
 # ----
 
-dotted_word -> "." word "." {% data => { return data[1]} %}
-
-star -> %star {% function(data){ return { type: "star", value: "*"}} %}
-
-dollar -> %dollar {% function(data){ return { type: "dollar", value: "$"}} %}
-
-word -> (%word {% (data)=>data[0].value %}| %word ("_" %word):? {% extractArray %}) {% function(data){ return { type: "string", value: data[0] }} %}
-
-number -> (%number|"-" %number) ".":? {% function(d) { return parseFloat(d[0].join("")) } %}
-
 _ -> null | %space {% function(d) { return null; } %}
 
-sqstring -> "'"  sstrchar:* "'"  {% function(d) {return { type: "string", value: d[1].join("") } } %}
+# dotted_word -> "." word "." {% data => { return data[1]} %}
 
-sstrchar -> [^\\'\n] {% id %}
-    | "\\" strescape
-        {% function(d) { return JSON.parse("\""+d.join("")+"\""); } %}
-    | "\\'"
-        {% function(d) {return "'"; } %}
-    | "/"
-        {% function(d) {return "/"; } %}
+# star -> %star {% function(data){ return { type: "star", value: "*"}} %}
 
-strescape -> ["\\/bfnrt] {% id %}
-    | "u" [a-fA-F0-9] [a-fA-F0-9] [a-fA-F0-9] [a-fA-F0-9] {%
-    function(d) {
-        return d.join("");
-    }
-%}
+# dollar -> %dollar {% function(data){ return { type: "dollar", value: "$"}} %}
+
+# word -> (%word {% (data)=>data[0].value %}| %word ("_" %word):? {% extractArray %}) {% function(data){ return { type: "string", value: data[0] }} %}
+
+# number -> (%number|"-" %number) ".":? {% function(d) { return parseFloat(d[0].join("")) } %}
+
+
+# sqstring -> "'"  sstrchar:* "'"  {% function(d) {return { type: "string", value: d[1].join("") } } %}
+
+# sstrchar -> [^\\'\n] {% id %}
+#     | "\\" strescape
+#         {% function(d) { return JSON.parse("\""+d.join("")+"\""); } %}
+#     | "\\'"
+#         {% function(d) {return "'"; } %}
+#     | "/"
+#         {% function(d) {return "/"; } %}
+
+# strescape -> ["\\/bfnrt] {% id %}
+#     | "u" [a-fA-F0-9] [a-fA-F0-9] [a-fA-F0-9] [a-fA-F0-9] {%
+#     function(d) {
+#         return d.join("");
+#     }
+# %}
 
 # ----
 # Helper JS functions
 # ----
 
 @{%
+
 
 function createTag(name,value) {
     return {
@@ -102,6 +141,8 @@ function createTag(name,value) {
         value: value
     }
 }
+
+function first(d) { return d[0] };
 
 function extractPair(kv, output) {
     if(kv[0]) { output[kv[0]] = kv[1]; }

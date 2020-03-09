@@ -1,24 +1,25 @@
 const nearley = require("/usr/local/lib/node_modules/nearley");
 const grammar = require("../src/index");
 const fs = require('fs')
-const readline = require('readline');
+// const readline = require('readline');
 
 
 let parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-let arr = [];
+// let arr = [];
 
 let ifc = `ISO-10303-21;
-
-
 HEADER;
 ENDSEC;
 DATA;
+#1=IFCPERSON($,$,'Name',$,$,$,$,$);
+#2=IFCORGANIZATION($,'Org',$,$,$);
+#3=IFCPERSONANDORGANIZATION(#1,#2,$);
 ENDSEC;
 END-ISO-10303-21;`
 
 parser.feed(ifc);
 console.log(parser.results)
-
+writeToPath(parser.results[0], 'test/out/ast.json');
 
 
 // const rl = readline.createInterface({

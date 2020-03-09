@@ -2,5 +2,6 @@ ISO-10303-21;
 HEADER;
 ENDSEC;
 DATA;
+#1=IFCPERSON($,$,'Name',$,$,$,$,$);
 ENDSEC;
 END-ISO-10303-21;
