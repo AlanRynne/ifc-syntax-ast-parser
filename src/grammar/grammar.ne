@@ -53,15 +53,16 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
     return d;
 } %}
 
-data_entity -> %ref %assign data_entity_constructor %eol {% (data) => {
+data_entity -> %ref _ %assign _ data_entity_constructor %eol {% (data) => {
+    data[0].type = "var";
     return {
-        type: "var",
+        type: "assign",
         left: data[0],
-        right: data[2]
+        right: data[4]
     }
 } %}
 
-data_entity_constructor -> %entity_name %lparen constructor_values %rparen {% (data) => {
+data_entity_constructor -> %word %lparen constructor_values %rparen {% (data) => {
     return {
         type: 'ctor',
         name: data[0],
@@ -69,15 +70,23 @@ data_entity_constructor -> %entity_name %lparen constructor_values %rparen {% (d
     }
 }%}
 
-constructor_values -> constructor_value (%separator constructor_value):* {% (data) => {
-    var d = [data[0][0]];
-    for(let i in data[1]) {
-        d.push(data[1][i][1][0])
+constructor_values -> constructor_value:? | constructor_value _ (%separator _ constructor_value):+ {% (data) => {
+    var d = [data[0]];
+    for(let i in data[2]) {
+        d.push(data[2][i][2])
     }
     return d;
 }%}
 
-constructor_value -> (%dollar | %string | %ref) {% first %}
+constructor_value -> ( %dollar 
+                     | string
+                     | %ref 
+                     | %star 
+                     | dotted_word 
+                     | number 
+                     | data_entity_constructor 
+                     ) {% (data) => data[0][0] %}
+                     | %lparen constructor_values %rparen {% (data) => data[1] %}
 
 # ----
 # Tags
@@ -97,9 +106,11 @@ tag_iso_close -> %isoclosetag %eol {% first %}
 # Basics
 # ----
 
+string -> %quote %string:? %quote {% (data) => data[1] %}
+
 _ -> null | %space {% function(d) { return null; } %}
 
-# dotted_word -> "." word "." {% data => { return data[1]} %}
+dotted_word -> "." %word "." {% data => { data[1].type = "dotword"; return data[1]} %}
 
 # star -> %star {% function(data){ return { type: "star", value: "*"}} %}
 
@@ -107,7 +118,13 @@ _ -> null | %space {% function(d) { return null; } %}
 
 # word -> (%word {% (data)=>data[0].value %}| %word ("_" %word):? {% extractArray %}) {% function(data){ return { type: "string", value: data[0] }} %}
 
-# number -> (%number|"-" %number) ".":? {% function(d) { return parseFloat(d[0].join("")) } %}
+number -> ("-":? %number) ".":? {% (data) => { 
+    var value = parseFloat(data[0].join(""));
+    var num = data[0][1];
+    num.value = value;
+    num.text = `${value}`
+    return num;
+    }%}
 
 
 # sqstring -> "'"  sstrchar:* "'"  {% function(d) {return { type: "string", value: d[1].join("") } } %}

@@ -4,7 +4,8 @@ const moo = require('moo')
 let newlexer = moo.states({
     // Rules that apply to every state.
     $all: {
-        eol: { match: /;\s?/, error: true},
+        space: { match: /\s+/, lineBreaks: true },
+        eol: { match: /;\s*/, lineBreaks: true },
     },
     // Main rules
     main: {
@@ -25,26 +26,33 @@ let newlexer = moo.states({
     },
     // IFC entity declaration
     entity: {
-        entity_name: { match: /\w+/ },
-        lparen: { match: /\(/, push: 'constructor' },
-        eol: { match: /;\s+/, pop: true },
+        word: { match: /\w+/ },
+        lparen: { match: /\(/, push: 'input' },
+        eol: { match: /;\s*/, pop: true, lineBreaks: true },
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
-    constructor: {
+    input: {
+        number: /(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)?(?:\.[eE][-+]?[0-9]+)?\b/,
+        word: { match: /\w+/ },
+        ".": { match: /\./ },
+        "-": "-",
         separator: { match: /,/ },
         dollar: { match: "$", value: x => null },
-        string: { match: /(?:'|").*(?:'|")/, value: x => x.slice(1,-1)},
+        star: { match: "*", value: x => null },
         ref: { match: /#\d+/, value: x=> x.slice(1) },
-        rparen: { match: /\)/, pop: true }
+        quote: { match: /\'|\"/, push: 'string' },
+        lparen: { match: "(", push: 'input' },
+        rparen: { match: ")", pop: true },
     },
     // Resolves anything inside a parenthesis that is not the constructor parenthesis.
-    parens: {
-        rparen: { match: /\)/, pop: true }
-    },
     // Close section tag "ENDSEC"
     endsec: {
         endtag: { match: /ENDSEC/, pop: true },
     },
+    string: {
+        quote: { match: /\'|\"/, pop: true },
+        string: { match: /[^\"|\']+/, lineBreaks: true }
+    }
 })
 
 let lexer = moo.compile({

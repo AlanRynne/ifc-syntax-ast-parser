@@ -8,7 +8,8 @@ const moo = require('moo')
 let newlexer = moo.states({
     // Rules that apply to every state.
     $all: {
-        eol: { match: /;\s?/, error: true},
+        space: { match: /\s+/, lineBreaks: true },
+        eol: { match: /;\s*/, lineBreaks: true },
     },
     // Main rules
     main: {
@@ -29,26 +30,33 @@ let newlexer = moo.states({
     },
     // IFC entity declaration
     entity: {
-        entity_name: { match: /\w+/ },
-        lparen: { match: /\(/, push: 'constructor' },
-        eol: { match: /;\s+/, pop: true },
+        word: { match: /\w+/ },
+        lparen: { match: /\(/, push: 'input' },
+        eol: { match: /;\s*/, pop: true, lineBreaks: true },
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
-    constructor: {
+    input: {
+        number: /(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)?(?:\.[eE][-+]?[0-9]+)?\b/,
+        word: { match: /\w+/ },
+        ".": { match: /\./ },
+        "-": "-",
         separator: { match: /,/ },
         dollar: { match: "$", value: x => null },
-        string: { match: /(?:'|").*(?:'|")/, value: x => x.slice(1,-1)},
+        star: { match: "*", value: x => null },
         ref: { match: /#\d+/, value: x=> x.slice(1) },
-        rparen: { match: /\)/, pop: true }
+        quote: { match: /\'|\"/, push: 'string' },
+        lparen: { match: "(", push: 'input' },
+        rparen: { match: ")", pop: true },
     },
     // Resolves anything inside a parenthesis that is not the constructor parenthesis.
-    parens: {
-        rparen: { match: /\)/, pop: true }
-    },
     // Close section tag "ENDSEC"
     endsec: {
         endtag: { match: /ENDSEC/, pop: true },
     },
+    string: {
+        quote: { match: /\'|\"/, pop: true },
+        string: { match: /[^\"|\']+/, lineBreaks: true }
+    }
 })
 
 let lexer = moo.compile({
@@ -174,41 +182,67 @@ var grammar = {
             }
             return d;
         } },
-    {"name": "data_entity", "symbols": [(newlexer.has("ref") ? {type: "ref"} : ref), (newlexer.has("assign") ? {type: "assign"} : assign), "data_entity_constructor", (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess":  (data) => {
+    {"name": "data_entity", "symbols": [(newlexer.has("ref") ? {type: "ref"} : ref), "_", (newlexer.has("assign") ? {type: "assign"} : assign), "_", "data_entity_constructor", (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess":  (data) => {
+            data[0].type = "var";
             return {
-                type: "var",
+                type: "assign",
                 left: data[0],
-                right: data[2]
+                right: data[4]
             }
         } },
-    {"name": "data_entity_constructor", "symbols": [(newlexer.has("entity_name") ? {type: "entity_name"} : entity_name), (newlexer.has("lparen") ? {type: "lparen"} : lparen), "constructor_values", (newlexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess":  (data) => {
+    {"name": "data_entity_constructor", "symbols": [(newlexer.has("word") ? {type: "word"} : word), (newlexer.has("lparen") ? {type: "lparen"} : lparen), "constructor_values", (newlexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess":  (data) => {
             return {
                 type: 'ctor',
                 name: data[0],
                 input: data[2]
             }
         }},
-    {"name": "constructor_values$ebnf$1", "symbols": []},
-    {"name": "constructor_values$ebnf$1$subexpression$1", "symbols": [(newlexer.has("separator") ? {type: "separator"} : separator), "constructor_value"]},
-    {"name": "constructor_values$ebnf$1", "symbols": ["constructor_values$ebnf$1", "constructor_values$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "constructor_values", "symbols": ["constructor_value", "constructor_values$ebnf$1"], "postprocess":  (data) => {
-            var d = [data[0][0]];
-            for(let i in data[1]) {
-                d.push(data[1][i][1][0])
+    {"name": "constructor_values$ebnf$1", "symbols": ["constructor_value"], "postprocess": id},
+    {"name": "constructor_values$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "constructor_values", "symbols": ["constructor_values$ebnf$1"]},
+    {"name": "constructor_values$ebnf$2$subexpression$1", "symbols": [(newlexer.has("separator") ? {type: "separator"} : separator), "_", "constructor_value"]},
+    {"name": "constructor_values$ebnf$2", "symbols": ["constructor_values$ebnf$2$subexpression$1"]},
+    {"name": "constructor_values$ebnf$2$subexpression$2", "symbols": [(newlexer.has("separator") ? {type: "separator"} : separator), "_", "constructor_value"]},
+    {"name": "constructor_values$ebnf$2", "symbols": ["constructor_values$ebnf$2", "constructor_values$ebnf$2$subexpression$2"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "constructor_values", "symbols": ["constructor_value", "_", "constructor_values$ebnf$2"], "postprocess":  (data) => {
+            var d = [data[0]];
+            for(let i in data[2]) {
+                d.push(data[2][i][2])
             }
             return d;
         }},
     {"name": "constructor_value$subexpression$1", "symbols": [(newlexer.has("dollar") ? {type: "dollar"} : dollar)]},
-    {"name": "constructor_value$subexpression$1", "symbols": [(newlexer.has("string") ? {type: "string"} : string)]},
+    {"name": "constructor_value$subexpression$1", "symbols": ["string"]},
     {"name": "constructor_value$subexpression$1", "symbols": [(newlexer.has("ref") ? {type: "ref"} : ref)]},
-    {"name": "constructor_value", "symbols": ["constructor_value$subexpression$1"], "postprocess": first},
+    {"name": "constructor_value$subexpression$1", "symbols": [(newlexer.has("star") ? {type: "star"} : star)]},
+    {"name": "constructor_value$subexpression$1", "symbols": ["dotted_word"]},
+    {"name": "constructor_value$subexpression$1", "symbols": ["number"]},
+    {"name": "constructor_value$subexpression$1", "symbols": ["data_entity_constructor"]},
+    {"name": "constructor_value", "symbols": ["constructor_value$subexpression$1"], "postprocess": (data) => data[0][0]},
+    {"name": "constructor_value", "symbols": [(newlexer.has("lparen") ? {type: "lparen"} : lparen), "constructor_values", (newlexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": (data) => data[1]},
     {"name": "tag_header", "symbols": [(newlexer.has("headertag") ? {type: "headertag"} : headertag), (newlexer.has("eol") ? {type: "eol"} : eol), "_"], "postprocess": first},
     {"name": "tag_data", "symbols": [(newlexer.has("datatag") ? {type: "datatag"} : datatag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": first},
     {"name": "tag_end_sec", "symbols": [(newlexer.has("endtag") ? {type: "endtag"} : endtag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": first},
     {"name": "tag_iso_open", "symbols": [(newlexer.has("isotag") ? {type: "isotag"} : isotag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": first},
     {"name": "tag_iso_close", "symbols": [(newlexer.has("isoclosetag") ? {type: "isoclosetag"} : isoclosetag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": first},
+    {"name": "string$ebnf$1", "symbols": [(newlexer.has("string") ? {type: "string"} : string)], "postprocess": id},
+    {"name": "string$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "string", "symbols": [(newlexer.has("quote") ? {type: "quote"} : quote), "string$ebnf$1", (newlexer.has("quote") ? {type: "quote"} : quote)], "postprocess": (data) => data[1]},
     {"name": "_", "symbols": []},
-    {"name": "_", "symbols": [(newlexer.has("space") ? {type: "space"} : space)], "postprocess": function(d) { return null; }}
+    {"name": "_", "symbols": [(newlexer.has("space") ? {type: "space"} : space)], "postprocess": function(d) { return null; }},
+    {"name": "dotted_word", "symbols": [{"literal":"."}, (newlexer.has("word") ? {type: "word"} : word), {"literal":"."}], "postprocess": data => { data[1].type = "dotword"; return data[1]}},
+    {"name": "number$subexpression$1$ebnf$1", "symbols": [{"literal":"-"}], "postprocess": id},
+    {"name": "number$subexpression$1$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "number$subexpression$1", "symbols": ["number$subexpression$1$ebnf$1", (newlexer.has("number") ? {type: "number"} : number)]},
+    {"name": "number$ebnf$1", "symbols": [{"literal":"."}], "postprocess": id},
+    {"name": "number$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "number", "symbols": ["number$subexpression$1", "number$ebnf$1"], "postprocess":  (data) => { 
+        var value = parseFloat(data[0].join(""));
+        var num = data[0][1];
+        num.value = value;
+        num.text = `${value}`
+        return num;
+        }}
 ]
   , ParserStart: "main_section"
 }
