@@ -1,6 +1,6 @@
 {
     "name": "ifc2ast",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "An abstract syntax tree generator for IFC files.",
     "main": "index.js",
     "scripts": {
@@ -8,7 +8,14 @@
         "test": "npm run build && node ./out/index.js",
         "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html"
     },
-    "keywords": [],
+    "keywords": [
+        "Industry Foundation Classes",
+        "IFC",
+        "BIM",
+        "Building Information Modelling",
+        "AST",
+        "Parser"
+    ],
     "author": "Alan Rynne",
     "license": "MIT",
     "dependencies": {
