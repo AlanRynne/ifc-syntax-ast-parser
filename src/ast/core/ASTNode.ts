@@ -1,4 +1,5 @@
-import { IVisitor, IVisitable } from "../visitor/ASTVisitor.js";
+import { IVisitable } from "../visitor/IVisitable";
+import { IVisitor } from "../visitor/IVisitor";
 import { ASTType } from "./ASTType";
 import { ASTLocation } from "./ASTLocation"
 

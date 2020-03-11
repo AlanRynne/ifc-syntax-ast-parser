@@ -3,6 +3,8 @@
     "version": "0.1.0",
     "description": "An abstract syntax tree generator for IFC files.",
     "main": "src/index.ts",
+    "author": "Alan Rynne",
+    "license": "MIT",
     "scripts": {
         "build": "nearleyc ./src/grammar/grammar.ne --out ./src/grammar/ifc.ts && tsc",
         "test": "jest",
@@ -17,8 +19,6 @@
         "AST",
         "Parser"
     ],
-    "author": "Alan Rynne",
-    "license": "MIT",
     "dependencies": {
         "moo": "^0.5.1",
         "nearley": "^2.19.1"

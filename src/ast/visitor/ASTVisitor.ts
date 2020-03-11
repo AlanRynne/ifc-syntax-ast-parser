@@ -1,14 +1,6 @@
 import { ASTNode } from "../core/ASTNode";
 import { StringNode } from "../nodes/StringNode";
-
-export interface IVisitor {
-    visit(node: IVisitable): any;
-}
-
-export interface IVisitable {
-    accept(v: IVisitor): any;
-}
-
+import { IVisitor } from "./IVisitor";
 
 export class ASTVisitor implements IVisitor {
     visit(node: ASTNode) {
