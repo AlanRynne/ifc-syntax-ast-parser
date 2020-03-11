@@ -1,0 +1,21 @@
+export enum ASTType {
+    Array,
+    Boolean,
+    Class,
+    Constant,
+    Constructor,
+    Enum,
+    Field,
+    Function,
+    Interface,
+    Key,
+    Method,
+    Namespace,
+    Null,
+    Number,
+    Operator,
+    Property,
+    String,
+    Struct,
+    Variable
+}
