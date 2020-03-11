@@ -1,6 +1,6 @@
 {
     "compileOnSave": true,
-    "include": ["src/", "test"],
+    "include": ["src/"],
     "compilerOptions": {
         /* Basic Options */
         // "incremental": true,                   /* Enable incremental compilation */
