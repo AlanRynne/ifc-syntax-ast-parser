@@ -4,10 +4,9 @@
     "description": "An abstract syntax tree generator for IFC files.",
     "main": "index.js",
     "scripts": {
-        "build": "nearleyc ./src/grammar/grammar.ne --out ./src/index.js",
-        "test": "npm run build && node ./tests/test.js",
-        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html",
-        "nearley-test": "nearley-test ./src/index.js --input"
+        "build": "nearleyc ./src/grammar/grammar.ne --out ./src/grammar/ifc.ts && tsc",
+        "test": "npm run build && node ./out/index.js",
+        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html"
     },
     "keywords": [],
     "author": "Alan Rynne",
@@ -15,5 +14,8 @@
     "dependencies": {
         "moo": "^0.5.1",
         "nearley": "^2.19.1"
+    },
+    "devDependencies": {
+        "@types/node": "^13.9.0"
     }
 }
