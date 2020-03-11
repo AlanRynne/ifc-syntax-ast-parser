@@ -12,6 +12,7 @@
         "internalConsoleOptions": "neverOpen",
         "windows": {
             "program": "${workspaceFolder}/node_modules/jest/bin/jest"
-        }
+        },
+        "preLaunchTask": "build"
     }]
 }
