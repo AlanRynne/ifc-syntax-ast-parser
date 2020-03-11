@@ -1,7 +1,7 @@
 @{%
 const moo = require('moo')
 
-export let lexer = moo.states({
+let lexer = moo.states({
     // Rules that apply to every state.
     $all: {
         space: { match: /\s+/, lineBreaks: true },
