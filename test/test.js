@@ -3,10 +3,8 @@ const grammar = require("../src/index");
 const fs = require('fs')
 
 var content = fs.readFileSync("examples/TestIFC-001.ifc", "utf8");
-
 let parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 parser.feed(content);
-console.log(parser.results)
 writeToPath(parser.results, 'test/out/ast.json');
 
 

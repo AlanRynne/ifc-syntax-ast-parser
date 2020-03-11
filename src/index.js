@@ -21,6 +21,8 @@ let newlexer = moo.states({
     // "HEADER" section
     header: {
         include: ['endsec'],
+        word: { match: /[A-Z\_0-9]+/ },
+        lparen: { match: /\(/, push: 'input' },
     },
     // "DATA" section
     data: {
@@ -149,16 +151,45 @@ var grammar = {
                 children: [data[2], data[4]]
             } 
         }},
-    {"name": "header_section", "symbols": ["tag_header", "tag_end_sec"], "postprocess":  (data) => {
+    {"name": "header_section$ebnf$1", "symbols": ["header_tags"], "postprocess": id},
+    {"name": "header_section$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "header_section", "symbols": ["tag_header", "_", "header_section$ebnf$1", "_", "tag_end_sec"], "postprocess":  (data) => {
             let headerObj = {
                 type: "sec",
                 name: "header",
                 start: data[0].offset,
-                end: data[1].offset + data[1].text.length,
-                children: []
+                end: data[4].offset + data[4].text.length,
+                children: data[2] ? data[2] : null
             }
             return headerObj;
         }},
+    {"name": "header_tags$ebnf$1", "symbols": []},
+    {"name": "header_tags$ebnf$1", "symbols": ["header_tags$ebnf$1", "header_tag"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "header_tags", "symbols": ["header_tags$ebnf$1"]},
+    {"name": "header_tag", "symbols": [(newlexer.has("word") ? {type: "word"} : word), (newlexer.has("lparen") ? {type: "lparen"} : lparen), "header_inputs", (newlexer.has("rparen") ? {type: "rparen"} : rparen), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess":  (data) => {
+            return {
+                type: "head_tag",
+                name: data[0],
+                start: data[1].offset,
+                end: data[4].offset + data[4].text.length,
+                children: data[2]
+            }
+        }},
+    {"name": "header_inputs$ebnf$1", "symbols": []},
+    {"name": "header_inputs$ebnf$1$subexpression$1", "symbols": [(newlexer.has("separator") ? {type: "separator"} : separator), "_", "header_input"]},
+    {"name": "header_inputs$ebnf$1", "symbols": ["header_inputs$ebnf$1", "header_inputs$ebnf$1$subexpression$1"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "header_inputs", "symbols": ["header_input", "_", "header_inputs$ebnf$1"], "postprocess":  (data) => {
+            var d = [data[0]]
+            for(let i in data[2]){
+                d.push(data[2][i][2])
+            }
+            return d;
+        } },
+    {"name": "header_input$ebnf$1", "symbols": [(newlexer.has("lparen") ? {type: "lparen"} : lparen)], "postprocess": id},
+    {"name": "header_input$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "header_input$ebnf$2", "symbols": [(newlexer.has("rparen") ? {type: "rparen"} : rparen)], "postprocess": id},
+    {"name": "header_input$ebnf$2", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "header_input", "symbols": ["header_input$ebnf$1", "string", "header_input$ebnf$2"], "postprocess": (data) => data[1]},
     {"name": "data_section$ebnf$1$subexpression$1", "symbols": ["data_entities"]},
     {"name": "data_section$ebnf$1", "symbols": ["data_section$ebnf$1$subexpression$1"], "postprocess": id},
     {"name": "data_section$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
@@ -168,7 +199,7 @@ var grammar = {
                 name: "data",
                 start: data[0].offset,
                 end: data[4].offset + data[4].text.length,
-                children: data[2][0]
+                children: data[2] ? data[2][0] : null
             }
             return dataObj;
         }},
@@ -227,7 +258,7 @@ var grammar = {
     {"name": "tag_iso_close", "symbols": [(newlexer.has("isoclosetag") ? {type: "isoclosetag"} : isoclosetag), (newlexer.has("eol") ? {type: "eol"} : eol)], "postprocess": first},
     {"name": "string$ebnf$1", "symbols": [(newlexer.has("string") ? {type: "string"} : string)], "postprocess": id},
     {"name": "string$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "string", "symbols": [(newlexer.has("quote") ? {type: "quote"} : quote), "string$ebnf$1", (newlexer.has("quote") ? {type: "quote"} : quote)], "postprocess": (data) => data[1]},
+    {"name": "string", "symbols": [(newlexer.has("quote") ? {type: "quote"} : quote), "string$ebnf$1", (newlexer.has("quote") ? {type: "quote"} : quote)], "postprocess": (data) => data[1]? data[1] : { type: "string", value: null, text: ''}},
     {"name": "_", "symbols": []},
     {"name": "_", "symbols": [(newlexer.has("space") ? {type: "space"} : space)], "postprocess": function(d) { return null; }},
     {"name": "dotted_word", "symbols": [{"literal":"."}, (newlexer.has("word") ? {type: "word"} : word), {"literal":"."}], "postprocess": data => { data[1].type = "dotword"; return data[1]}},

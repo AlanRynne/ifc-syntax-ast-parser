@@ -17,6 +17,8 @@ let newlexer = moo.states({
     // "HEADER" section
     header: {
         include: ['endsec'],
+        word: { match: /[A-Z\_0-9]+/ },
+        lparen: { match: /\(/, push: 'input' },
     },
     // "DATA" section
     data: {
