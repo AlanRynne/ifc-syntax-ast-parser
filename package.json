@@ -1,13 +1,13 @@
 {
-    "name": "ifc2ast-parser",
+    "name": "ifc2ast",
     "version": "1.0.0",
-    "description": "An abstract syntax tree parser for IFC files.",
+    "description": "An abstract syntax tree generator for IFC files.",
     "main": "index.js",
     "scripts": {
-        "build": "nearleyc ./src/grammar/ifcGrammar.ne --out ./out/ifcGrammar.js",
-        "test": "npm run build && node ./ifcParser/test.js",
-        "diagrams": "nearley-railroad ./src/grammar/ifcGrammar.ne -o ./out/ifcGrammar.html",
-        "nearley-test": "nearley-test ./out/ifcGrammar.js --input"
+        "build": "nearleyc ./src/grammar/grammar.ne --out ./src/index.js",
+        "test": "npm run build && node ./tests/test.js",
+        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html",
+        "nearley-test": "nearley-test ./src/index.js --input"
     },
     "keywords": [],
     "author": "Alan Rynne",
