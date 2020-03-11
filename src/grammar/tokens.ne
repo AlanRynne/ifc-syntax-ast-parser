@@ -1,7 +1,7 @@
 @{%
 const moo = require('moo')
 
-let newlexer = moo.states({
+export let lexer = moo.states({
     // Rules that apply to every state.
     $all: {
         space: { match: /\s+/, lineBreaks: true },
@@ -30,7 +30,7 @@ let newlexer = moo.states({
     entity: {
         word: { match: /\w+/ },
         lparen: { match: /\(/, push: 'input' },
-        eol: { match: /;\s*/, pop: true, lineBreaks: true },
+        eol: { match: /;\s*/, pop: true },
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
     input: {
@@ -51,44 +51,11 @@ let newlexer = moo.states({
     endsec: {
         endtag: { match: /ENDSEC/, pop: true },
     },
+    // Resolves anything inside single or double quotes.
     string: {
         quote: { match: /\'|\"/, pop: true },
         string: { match: /[^\"|\']+/, lineBreaks: true }
     }
-})
-
-let lexer = moo.compile({
-    space: {match: /\s+/, lineBreaks: true},
-    number: /(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)?(?:\.[eE][-+]?[0-9]+)?\b/,
-    '{': '{',
-    '}': '}',
-    '[': '[',
-    ']': ']',
-    '(':'(',
-    ')':')',
-    ',': ',',
-    ':': ':',
-    ';':';',
-    '.':'.',
-    '<':'<',
-    '=':'=',
-    '>':'>',
-    '_':'_',
-    '-':'-',
-    '#':'#',
-    '\'':'\'',
-    '/':'/',
-    dollar:'$',
-    star:'*',
-    header: 'HEADER',
-    file: 'FILE',
-    endSec: 'ENDSEC',
-    data: 'DATA',
-    ifc: 'IFC',
-    iso: 'ISO',
-    end: 'END',
-    word: /[a-zA-Z0-9\-]+/,
-    myError: moo.error
 })
 
 %}

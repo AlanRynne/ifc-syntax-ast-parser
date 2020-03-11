@@ -1,5 +1,5 @@
 @include "tokens.ne"
-@lexer newlexer
+@lexer lexer
 
 
 # Main rule - Resolves the complete IFC file
@@ -49,6 +49,9 @@ header_inputs -> header_input _ (%separator _ header_input):* {% (data) => {
 } %}
 header_input -> %lparen:? string %rparen:? {% (data) => data[1] %}
 
+
+
+
 # ----
 # Data section
 # ----
@@ -90,7 +93,8 @@ data_entity_constructor -> %word %lparen constructor_values %rparen {% (data) =>
     }
 }%}
 
-constructor_values -> constructor_value:? | constructor_value _ (%separator _ constructor_value):+ {% (data) => {
+constructor_values -> constructor_value:? 
+                    | constructor_value _ (%separator _ constructor_value):+ {% (data) => {
     var d = [data[0]];
     for(let i in data[2]) {
         d.push(data[2][i][2])
@@ -98,13 +102,13 @@ constructor_values -> constructor_value:? | constructor_value _ (%separator _ co
     return d;
 }%}
 
-constructor_value -> ( %dollar 
-                     | string
-                     | %ref 
-                     | %star 
-                     | dotted_word 
-                     | number 
-                     | data_entity_constructor 
+constructor_value -> (    %dollar 
+                        | string
+                        | %ref 
+                        | %star 
+                        | dotted_word 
+                        | number 
+                        | data_entity_constructor 
                      ) {% (data) => data[0][0] %}
                      | %lparen constructor_values %rparen {% (data) => data[1] %}
 

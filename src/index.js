@@ -34,7 +34,7 @@ let newlexer = moo.states({
     entity: {
         word: { match: /\w+/ },
         lparen: { match: /\(/, push: 'input' },
-        eol: { match: /;\s*/, pop: true, lineBreaks: true },
+        eol: { match: /;\s*/, pop: true },
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
     input: {
