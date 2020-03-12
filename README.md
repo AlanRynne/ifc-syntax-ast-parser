@@ -1,6 +1,6 @@
 # IFC to AST
 
-[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=feature%2FAST-node-classes)](https://travis-ci.com/AlanRynne/ifc2ast)
+[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=master)](https://travis-ci.com/AlanRynne/ifc2ast)
 
 **_IFC2AST_** is a helper package for the IFC Language Server I am developing as a complete overhaul of the [IFC Syntax](https://github.com/AlanRynne/ifc-syntax) extension for VSCode.
 
