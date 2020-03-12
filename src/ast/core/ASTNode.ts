@@ -6,8 +6,8 @@ import { ASTLocation } from "./ASTLocation"
 
 export class ASTNode implements IVisitable {
 
-    type: ASTType
-    loc: ASTLocation
+    readonly type: ASTType
+    readonly loc: ASTLocation
 
     /**
      * Constructs a Base AST Node

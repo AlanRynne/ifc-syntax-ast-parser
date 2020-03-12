@@ -3,6 +3,8 @@
 @{% 
 import { lexer } from './tokens'
 import { first } from './functions'
+import { DocumentNode } from "@/ast/nodes";
+import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
 %}
 
 @lexer lexer
@@ -10,13 +12,9 @@ import { first } from './functions'
 
 # Main rule - Resolves the complete IFC file
 main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close {% (data: any) => {
-    return {
-        type: "step",
-        version: data[0].value,
-        start: data[0].offset,
-        end: data[6].offset + data[6].text.length,
-        children: [data[2], data[4]]
-    } 
+    let docNode = new DocumentNode(data[0].value,data[2],data[4], new ASTLocation(data[0].offset,data[6].offset + data[6].text.length))
+    console.log("DOCNODE", docNode)
+    return docNode;
 }%}
 
 # ----
