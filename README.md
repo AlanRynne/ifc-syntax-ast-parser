@@ -1,6 +1,9 @@
 # IFC to AST
 
-[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=master)](https://travis-ci.com/AlanRynne/ifc2ast)
+![GitHub last commit](https://img.shields.io/github/last-commit/AlanRynne/ifc2ast)
+[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=develop)](https://travis-ci.com/AlanRynne/ifc2ast)
+[![codecov](https://codecov.io/gh/AlanRynne/ifc2ast/branch/develop/graph/badge.svg)](https://codecov.io/gh/AlanRynne/ifc2ast)
+![GitHub](https://img.shields.io/github/license/AlanRynne/ifc2ast)
 
 **_IFC2AST_** is a helper package for the IFC Language Server I am developing as a complete overhaul of the [IFC Syntax](https://github.com/AlanRynne/ifc-syntax) extension for VSCode.
 
