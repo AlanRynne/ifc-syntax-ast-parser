@@ -1,19 +1,33 @@
 {
     "name": "ifc2ast",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "An abstract syntax tree generator for IFC files.",
-    "main": "index.js",
-    "scripts": {
-        "build": "nearleyc ./src/grammar/grammar.ne --out ./src/index.js",
-        "test": "npm run build && node ./tests/test.js",
-        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html",
-        "nearley-test": "nearley-test ./src/index.js --input"
-    },
-    "keywords": [],
+    "main": "src/main.ts",
     "author": "Alan Rynne",
     "license": "MIT",
+    "scripts": {
+        "build": "nearleyc ./src/grammar/grammar.ne --out ./src/grammar/ifc.ts && tsc",
+        "test": "jest",
+        "coverage": "jest --coverage",
+        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html"
+    },
+    "keywords": [
+        "Industry Foundation Classes",
+        "IFC",
+        "BIM",
+        "Building Information Modelling",
+        "AST",
+        "Parser"
+    ],
     "dependencies": {
         "moo": "^0.5.1",
         "nearley": "^2.19.1"
+    },
+    "devDependencies": {
+        "@types/jest": "^25.1.4",
+        "@types/node": "^13.9.0",
+        "jest": "^25.1.0",
+        "ts-jest": "^25.2.1",
+        "typescript": "^3.8.3"
     }
 }
