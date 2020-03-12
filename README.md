@@ -1,5 +1,7 @@
 # IFC to AST
 
+[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=feature%2FAST-node-classes)](https://travis-ci.com/AlanRynne/ifc2ast)
+
 **_IFC2AST_** is a helper package for the IFC Language Server I am developing as a complete overhaul of the [IFC Syntax](https://github.com/AlanRynne/ifc-syntax) extension for VSCode.
 
 This small package will generate an Abstract Syntax Tree (AST) of a given IFC file, to be consumed by the language server in order to provide functionality such as:
