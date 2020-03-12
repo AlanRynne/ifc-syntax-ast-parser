@@ -9,8 +9,8 @@ export let lexer = moo.states({
     },
     // Main rules
     main: {
-        isotag: { match: /ISO-\d{5}-\d{2}/, value: x => x.slice(4) },
-        isoclosetag: { match: /END-ISO-\d{5}-\d{2}/, value: x => x.slice(8) },
+        isotag: { match: /ISO-\d{5}-\d{2}/, value: (x: string) => x.slice(4) },
+        isoclosetag: { match: /END-ISO-\d{5}-\d{2}/, value: (x: string) => x.slice(8) },
         headertag: { match: /HEADER/, push: 'header' },
         datatag: { match: /DATA/, push: 'data' },
     },
@@ -23,7 +23,7 @@ export let lexer = moo.states({
     // "DATA" section
     data: {
         include: ['endsec'],
-        ref: { match: /#\d+/, value: x => x.slice(1) },
+        ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
         assign: { match: "=", push: 'entity' }
     },
     // IFC entity declaration
@@ -31,6 +31,7 @@ export let lexer = moo.states({
         word: { match: /\w+/ },
         lparen: { match: /\(/, push: 'input' },
         eol: { match: /;\s*/, pop: true },
+        err: moo.error
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
     input: {
@@ -39,9 +40,9 @@ export let lexer = moo.states({
         ".": { match: /\./ },
         "-": "-",
         separator: { match: /,/ },
-        dollar: { match: "$", value: x => null },
-        star: { match: "*", value: x => null },
-        ref: { match: /#\d+/, value: x => x.slice(1) },
+        dollar: { match: "$", value: (x: string) => null },
+        star: { match: "*", value: (x: string) => null },
+        ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
         quote: { match: /\'|\"/, push: 'string' },
         lparen: { match: "(", push: 'input' },
         rparen: { match: ")", pop: true },

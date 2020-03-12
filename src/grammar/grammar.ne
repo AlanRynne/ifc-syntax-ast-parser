@@ -13,7 +13,6 @@ import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
 # Main rule - Resolves the complete IFC file
 main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close {% (data: any) => {
     let docNode = new DocumentNode(data[0].value,data[2],data[4], new ASTLocation(data[0].offset,data[6].offset + data[6].text.length))
-    console.log("DOCNODE", docNode)
     return docNode;
 }%}
 
@@ -80,7 +79,7 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
     return d;
 } %}
 
-data_entity -> %ref _ %assign _ data_entity_constructor %eol {% (data) => {
+data_entity -> %ref _ %assign _ data_entity_constructor _ (%eol | %err) {% (data) => {
     data[0].type = "var";
     return {
         type: "assign",
