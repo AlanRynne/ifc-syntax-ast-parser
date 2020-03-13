@@ -15,6 +15,6 @@ This small package will generate an Abstract Syntax Tree (AST) of a given IFC fi
 - Syntax error checking
 - Validation
 
-The AST nodes can be traversed using the _visitor pattern_ (which to be honest, I had no idea what it was until last week even though i've been using it for years! The perils of a self-taught programmer...).
+The AST nodes can be traversed using the _visitor pattern_ (which to be honest, I had no idea what it was until last week even though I've been using it for years! The perils of a self-taught programmer...).
 
 The project is written in typescript and developed by myself, @AlanRynne.

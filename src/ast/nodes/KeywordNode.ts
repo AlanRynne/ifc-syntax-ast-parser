@@ -1,7 +1,7 @@
 import { ASTType, ASTNode, ASTLocation } from "../index";
 import { IVisitor } from "../visitor/IVisitor";
 
-export class StringNode extends ASTNode {
+export class KeywordNode extends ASTNode {
 
     text: string
 
@@ -10,7 +10,7 @@ export class StringNode extends ASTNode {
      * @param text 
     **/
     constructor(text: string, location: ASTLocation) {
-        super(ASTType.String, location);
+        super(ASTType.Keyword, location);
         this.text = text
     }
 
