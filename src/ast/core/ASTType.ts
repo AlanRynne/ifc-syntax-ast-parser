@@ -7,5 +7,9 @@ export enum ASTType {
     Property,
     Section,
     String,
-    Variable
+    Assignment,
+    Variable,
+    Function,
+    Keyword,
+    Comment
 }
