@@ -8,28 +8,28 @@ export class ASTVisitor implements IVisitor {
         if (node instanceof AssignmentNode) {
             console.log(node.type)
         } else if (node instanceof ConstructorNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof DocumentNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
             node.sections.forEach(sec => sec.accept(this))
         } else if (node instanceof EnumMemberNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof FunctionNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof KeywordNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof NullNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof NumberNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof SectionNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof StringNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else if (node instanceof VariableNode) {
-            console.log(node.type)
+            console.log(node.constructor.name)
         } else {
-            console.log("Other node:", node)
+            console.log("Other node: " + node.constructor.name)
         }
     }
 }

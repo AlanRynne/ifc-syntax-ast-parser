@@ -10,5 +10,6 @@ export enum ASTType {
     Assignment,
     Variable,
     Function,
-    Keyword
+    Keyword,
+    Comment
 }

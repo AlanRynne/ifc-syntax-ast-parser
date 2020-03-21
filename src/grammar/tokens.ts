@@ -24,22 +24,24 @@ export let lexer = moo.states({
     data: {
         include: ['endsec'],
         ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
-        assign: { match: "=", push: 'entity' }
+        assign: { match: "=", push: 'entity' },
+        comment: { match: /\/\*(?:[^*]|[\r\n]|(?:\*+(?:[^*/]|[\r\n])))*\*+\// }
     },
     // IFC entity declaration
     entity: {
-        word: { match: /\w+/ },
+        word: { match: /[\w\d]+/ },
         lparen: { match: /\(/, push: 'input' },
         eol: { match: /;\s*/, pop: true },
         err: moo.error
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
     input: {
-        number: /(?:[0-9]|[1-9][0-9]+)(?:\.[0-9]+)?(?:\.[eE][-+]?[0-9]+)?\b/,
-        word: { match: /\w+/ },
-        ".": { match: /\./ },
+        ".": ".",
         "-": "-",
+        int: { match: /\d+/ },
+        scisuff: { match: /[eE][-+]?\d+/ },
         separator: { match: /,/ },
+        word: { match: /[\w\d]+/ },
         dollar: { match: "$", value: (x: string) => null },
         star: { match: "*", value: (x: string) => null },
         ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
@@ -56,5 +58,5 @@ export let lexer = moo.states({
     string: {
         quote: { match: /\'|\"/, pop: true },
         string: { match: /[^\"|\']+/, lineBreaks: true }
-    }
+    },
 })

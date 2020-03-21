@@ -9,7 +9,7 @@ import { NullNode } from "./NullNode";
 import { VariableNode } from "./VariableNode";
 import { FunctionNode } from "./FunctionNode";
 import { KeywordNode } from "./KeywordNode";
-
+import { CommentNode } from "./CommentNode";
 
 export {
     ConstructorNode,
@@ -22,5 +22,6 @@ export {
     NullNode,
     VariableNode,
     FunctionNode,
-    KeywordNode
+    KeywordNode,
+    CommentNode
 }

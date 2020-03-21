@@ -3,7 +3,7 @@
 @{% 
 import { lexer } from './tokens'
 import { first } from './functions'
-import { DocumentNode, SectionNode, AssignmentNode, ConstructorNode, StringNode, NumberNode, EnumMemberNode, NullNode, VariableNode, FunctionNode, KeywordNode } from "@/ast/nodes";
+import * as Nodes from "@/ast/nodes";
 import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
 %}
 
@@ -16,7 +16,7 @@ import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
 
 # Resolves the complete IFC file
 main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close {% (data: any) => {
-    return new DocumentNode(
+    return new Nodes.DocumentNode(
         data[0].value,
         [data[2], data[4]], 
         new ASTLocation(
@@ -30,10 +30,9 @@ main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close
 # HEADER SECTION
 # ----
 
-
 # Resolves the complete header of the IFC file
 header_section -> tag_header _ header_entities:? _ tag_end_sec {% (data) => {
-    return new SectionNode(
+    return new Nodes.SectionNode(
         data[0],
         data[2],
         new ASTLocation(
@@ -50,7 +49,7 @@ header_entities -> header_entity:*
 
 # Resolves a header entity declaration
 header_entity -> %word %lparen header_inputs %rparen %eol {% (data) => {
-    return new FunctionNode(
+    return new Nodes.FunctionNode(
         data[0].value,
         data[2],
         new ASTLocation(data[1].offset,data[4].offset + data[4].text.length)
@@ -79,7 +78,7 @@ header_input -> %lparen:? string %rparen:? {% data =>  data[1] %}
 
 # Resolves the complete data section of the IFC file
 data_section -> tag_data _ data_entities:? _ tag_end_sec {% (data) => {
-    return new SectionNode(
+    return new Nodes.SectionNode(
         data[0],
         data[2],
         new ASTLocation(
@@ -100,17 +99,17 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
 
 # Resolves an IFC entity declaration
 data_entity -> var _ %assign _ data_entity_constructor _ %eol {% (data) => {
-    return new AssignmentNode(
+    return new Nodes.AssignmentNode(
         data[0],
         data[4],
         new ASTLocation(data[0].loc.start,data[6].offset + data[6].text.length)
         )
-} %}
+} %} | comment {% first %}
 
 
 # Resolves an IFC constructor function
 data_entity_constructor -> %word %lparen constructor_values %rparen {% (data) => {
-    return new ConstructorNode(data[0].value,data[2],new ASTLocation(data[0].offset,data[3].offset + data[3].text.length))
+    return new Nodes.ConstructorNode(data[0].value,data[2],new ASTLocation(data[0].offset,data[3].offset + data[3].text.length))
 }%}
 
 
@@ -136,11 +135,11 @@ constructor_value -> (    null_node
                      | %lparen constructor_values %rparen {% (data) => data[1] %}
 
 var -> %ref {% data => {
-    return new VariableNode(data[0].value,new ASTLocation(data[0].offset,data[0].offset+data[0].text.length))
+    return new Nodes.VariableNode(data[0].value,new ASTLocation(data[0].offset,data[0].offset+data[0].text.length))
 }%}
 
 null_node -> (%dollar | %star) {% data => {
-    return new NullNode(data[0][0].text, new ASTLocation(data[0][0].offset,data[0][0].offset+1))
+    return new Nodes.NullNode(data[0][0].text, new ASTLocation(data[0][0].offset,data[0][0].offset+1))
 }%}
 
 # ----
@@ -148,7 +147,7 @@ null_node -> (%dollar | %star) {% data => {
 # ----
 
 tag_header -> %headertag %eol _ {% (data) => {
-    return new KeywordNode(
+    return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
             data[0].offset, 
@@ -156,7 +155,7 @@ tag_header -> %headertag %eol _ {% (data) => {
 } %}
 
 tag_data -> %datatag %eol {% (data) => {
-    return new KeywordNode(
+    return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
             data[0].offset, 
@@ -165,7 +164,7 @@ tag_data -> %datatag %eol {% (data) => {
 
 
 tag_end_sec -> %endtag %eol {% (data) => {
-    return new KeywordNode(
+    return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
             data[0].offset, 
@@ -184,21 +183,39 @@ tag_iso_close -> %isoclosetag %eol {% first %}
 
 
 string -> %quote %string:? %quote {% data => { 
-    return new StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
+    return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
+comment -> %comment {% (data) =>  {
+    return new Nodes.CommentNode(data[0].text,new ASTLocation(data[0].offset, data[0].offset + data[0].text.length))
+} %}
 
 enum_member -> "." %word "." {% data => { 
-    return new EnumMemberNode(data[1].value, new ASTLocation(data[0].offset, data[2].offset + data[2].text.length))
+    return new Nodes.EnumMemberNode(data[1].value, new ASTLocation(data[0].offset, data[2].offset + data[2].text.length))
 }%}
 
-
-number -> ("-":? %number) ".":? {% (data) => { 
-    var value = parseFloat(data[0].join(""));
-    let start = data[0][0]? data[0][0].offset : data[0][1].offset
-    let end = data[1]? data[1].offset + 1 : data[0][1].offset + data[0][1].text.length
-    return new NumberNode(value, new ASTLocation(start, end))
+number -> "-":? (scinum | decimal | int) {% (data) => {
+    let numAST = data[1][0]
+    if(data[0]) numAST.value = -numAST.value
+    return numAST
 }%}
 
+# Only positive numbers
+
+scinum -> decimal %scisuff {% ([dec, suf]) => {
+    let txt = dec.value + suf.value
+    let num: number = +txt
+    dec.value = num;
+    dec.loc.end += suf.text.length
+    return dec
+}%}
+
+decimal -> int "." int:? {% (data) => {
+    let dec: string = data[2]? data[2].value : ""
+    let text: string = data[0].value + "." + dec
+    return new Nodes.NumberNode(parseFloat(text),new ASTLocation(data[0].loc.start,data[2]?data[2].loc.end:data[0].loc.end+1))
+}%}
+
+int -> %int {% ([token]) => new Nodes.NumberNode(parseFloat(token.value),new ASTLocation(token.offset,token.offset+token.text.length)) %}
 
 _ -> null | %space {% function(d) { return null; } %}
