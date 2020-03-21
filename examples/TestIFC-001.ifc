@@ -1,12 +1,15 @@
 ISO-10303-21;
 HEADER;
+/******************************************************************************************
+* STEP Physical File produced by: The EXPRESS Data Manager Version 5.02.0100.07 : 28 Aug 2013
+******************************************************************************************/
 FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
 FILE_NAME('TestIFC-001.ifc','2015-01-10T12:59:29',('Alan Rynne','alan@rynne.es'),('Paramdigma'),'Written by hand using IFC Syntax!','IFC Syntax version 0.1.4','');
 FILE_SCHEMA(('IFC2X3'));
 ENDSEC;
 DATA;
 #1=IFCSTRINGTEST("Test",'Name',"",''); /* TEST COMMENT */
-#2=IFCNUMBERTEST(-1,1.1,-1.1E35,1.1E-35,-1.E45,1.E-45);
+#2=IFCNUMBERTEST(-1,1.1,-1.1E35,1.1E-35,-1.E45,1.E-45); 
 /****
 * TEST MULTILINE COMMENT
 ****/

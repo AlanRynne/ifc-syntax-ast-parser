@@ -1,32 +1,28 @@
 import fs from 'fs'
-import readline from 'readline';
-import ifcGrammar from './main'
+import readline from 'readline'
+import dir from 'node-dir'
 import * as nearley from 'nearley'
+import path from 'path'
+import ifcGrammar from './main'
 import { ASTVisitor } from "./ast/visitor/ASTVisitor";
 
-describe('Unambiguity test', function () {
-    // it('TestIFC-001.ifc', () => mainIfcParserTest("examples/TestIFC-001.ifc", "./results/ast-testifc.json"))
-    // it('Model_001.ifc', () => mainIfcParserTest("examples/Model_001.ifc", "./results/ast-model001.json"))
-    // it('Model_002.ifc', () => mainIfcParserTest("examples/Model_002.ifc", "./results/ast-model002.json"))
-})
 
-describe('Line by line unambiguous test', () => {
-    // it('TestIFC-001', () => {
-    //     return ParseIFCLineByLine("examples/TestIFC-001.ifc", "./results/ast-LL-testifc.json")
-    //         .then((results) =>
-    //             expect(results.length).toBe(1))
-    // });
-    // it('Model_001', () => {
-    //     return ParseIFCLineByLine("examples/Model_001.ifc", "./results/ast-LL-model001.json")
-    //         .then((results) =>
-    //             expect(results.length).toBe(1))
-    // });
-    it('Model_002', () => {
-        return ParseIFCLineByLine("examples/Model_002.ifc", "./results/ast-LL-model002.json")
-            .then((results) =>
-                expect(results.length).toBe(1))
-    });
-})
+const INDIR = "examples"
+const OUTDIR = "results"
+
+var files = dir.files(INDIR, { sync: true })
+var ifcFiles = files.filter((file) => path.extname(file) === ".ifc")
+
+describe("IFC files", () => {
+    ifcFiles.forEach((file) => {
+        let name = path.basename(file, ".ifc")
+        let outFile = path.join(OUTDIR, name) + ".json"
+        it(file, async () => {
+            const results = await ParseIFCLineByLine(file, outFile);
+            return expect(results.length).toBe(1);
+        })
+    })
+});
 
 function mainIfcParserTest(path: string, outPath: string) {
     console.time('alltext');
@@ -49,7 +45,7 @@ function writeToPath(jsObj: any, path: string) {
             if (err) throw err;
         })
 }
-async function ParseIFCLineByLine(path: string, outPath: string): Promise<any> {
+export async function ParseIFCLineByLine(path: string, outPath: string): Promise<any> {
     return readLines(path, outPath)
 }
 

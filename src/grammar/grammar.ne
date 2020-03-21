@@ -34,7 +34,7 @@ main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close
 header_section -> tag_header _ header_entities:? _ tag_end_sec {% (data) => {
     return new Nodes.SectionNode(
         data[0],
-        data[2],
+        data[2][0],
         new ASTLocation(
             data[0].loc.start,
             data[4].loc.end
@@ -54,7 +54,7 @@ header_entity -> %word %lparen header_inputs %rparen %eol {% (data) => {
         data[2],
         new ASTLocation(data[1].offset,data[4].offset + data[4].text.length)
         )
-}%}
+}%} | comment {% first %}
 
 
 # Unfolds the nested list of header inputs into a single list
@@ -186,8 +186,8 @@ string -> %quote %string:? %quote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> %comment {% (data) =>  {
-    return new Nodes.CommentNode(data[0].text,new ASTLocation(data[0].offset, data[0].offset + data[0].text.length))
+comment -> %cmnt_strt (_ %cmnt_line):* _ %cmnt_end {% (data) =>  {
+    return new Nodes.CommentNode(data[1],new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
 } %}
 
 enum_member -> "." %word "." {% data => { 

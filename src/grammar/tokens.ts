@@ -16,16 +16,22 @@ export let lexer = moo.states({
     },
     // "HEADER" section
     header: {
-        include: ['endsec'],
+        include: ['endsec', 'cmnt_strt'],
         word: { match: /[A-Z\_0-9]+/ },
         lparen: { match: /\(/, push: 'input' },
     },
     // "DATA" section
     data: {
-        include: ['endsec'],
+        include: ['endsec', 'cmnt_strt'],
         ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
         assign: { match: "=", push: 'entity' },
-        comment: { match: /\/\*(?:[^*]|[\r\n]|(?:\*+(?:[^*/]|[\r\n])))*\*+\// }
+    },
+    cmnt_strt: {
+        cmnt_strt: { match: /\/\*+/, push: 'cmnt' }
+    },
+    cmnt: {
+        cmnt_end: { match: /\*+\//, pop: true },
+        cmnt_line: { match: /[^\s\\]+/ }
     },
     // IFC entity declaration
     entity: {
