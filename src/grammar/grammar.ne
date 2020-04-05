@@ -192,8 +192,9 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> %cmnt_strt (_ %cmnt_line):* _ %cmnt_end {% (data) =>  {
-    return new Nodes.CommentNode(data[1],new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
+comment -> %cmnt_strt ((null | %space {% first %}) %cmnt_line):* (null | %space {% first %}) %cmnt_end {% (data) =>  {
+    let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
+    return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
 } %}
 
 enum_member -> "." %word "." {% data => { 
