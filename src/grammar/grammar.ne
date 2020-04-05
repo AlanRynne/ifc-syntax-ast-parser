@@ -31,7 +31,7 @@ main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close
 # ----
 
 # Resolves the complete header of the IFC file
-header_section -> tag_header _ header_entities:? _ tag_end_sec {% (data) => {
+header_section -> tag_header _ header_entities _ tag_end_sec {% (data) => {
     return new Nodes.SectionNode(
         data[0],
         data[2][0],
@@ -44,31 +44,32 @@ header_section -> tag_header _ header_entities:? _ tag_end_sec {% (data) => {
 
 
 # Resolves a collection of header entities
-header_entities -> header_entity:*
+header_entities -> header_entity (_ header_entity):*
 
 
 # Resolves a header entity declaration
-header_entity -> %word %lparen header_inputs %rparen %eol {% (data) => {
+header_entity -> %word _ %lparen _ header_inputs _ %rparen %eol {% (data) => {
     return new Nodes.FunctionNode(
         data[0].value,
-        data[2],
-        new ASTLocation(data[1].offset,data[4].offset + data[4].text.length)
+        data[4],
+        new ASTLocation(data[2].offset,data[7].offset + data[7].text.length)
         )
-}%} | comment {% first %}
+}%} | comment
 
 
 # Unfolds the nested list of header inputs into a single list
-header_inputs -> header_input _ (%separator _ header_input):* {% data => {
+header_inputs -> header_input (_ %separator _ header_input):* {% data => {
     var d = [data[0]]
     for(let i in data[2]){
-        d.push(data[2][i][2])
+        d.push(data[2][i][3])
     }
     return d;
 } %}
 
-
+header_input -> comment _ header_input_raw | header_input_raw
 # Resolves all valid header inputs (currently just strings?)
-header_input -> %lparen:? string %rparen:? {% data =>  data[1] %}
+# TODO: Fix resolver
+header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen | %dollar | string
 
 
 # ----
@@ -108,8 +109,8 @@ data_entity -> var _ %assign _ data_entity_constructor _ %eol {% (data) => {
 
 
 # Resolves an IFC constructor function
-data_entity_constructor -> %word %lparen constructor_values %rparen {% (data) => {
-    return new Nodes.ConstructorNode(data[0].value,data[2],new ASTLocation(data[0].offset,data[3].offset + data[3].text.length))
+data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) => {
+    return new Nodes.ConstructorNode(data[0].value,data[3],new ASTLocation(data[0].offset,data[4].offset + data[4].text.length))
 }%}
 
 
@@ -123,7 +124,8 @@ constructor_values -> constructor_value:?
     return d;
 }%}
 
-
+# TODO: i thinks the memory leak is the circular reference between constructor_values and constructor_value
+# TODO: Check solution in head and do the same (step by step rules)
 # Resolves all valid values inside a constructor
 constructor_value -> (    null_node 
                         | string
@@ -181,8 +183,13 @@ tag_iso_close -> %isoclosetag %eol {% first %}
 # BASICS
 # ----
 
+string -> single_quote_string | double_quote_string
 
-string -> %quote %string:? %quote {% data => { 
+double_quote_string -> %dblquote %string:? %dblquote {% data => { 
+    return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
+}%}
+
+single_quote_string -> %snglquote %string:? %snglquote {% data => { 
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 

@@ -42,6 +42,7 @@ export let lexer = moo.states({
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.
     input: {
+        include: ['cmnt_strt'],
         ".": ".",
         "-": "-",
         int: { match: /\d+/ },
@@ -51,7 +52,8 @@ export let lexer = moo.states({
         dollar: { match: "$", value: (x: string) => null },
         star: { match: "*", value: (x: string) => null },
         ref: { match: /#\d+/, value: (x: string) => x.slice(1) },
-        quote: { match: /\'|\"/, push: 'string' },
+        snglquote: { match: /\'/, push: 'snglqt_str' },
+        dblquote: { match: /\"/, push: 'dblqt_str' },
         lparen: { match: "(", push: 'input' },
         rparen: { match: ")", pop: true },
     },
@@ -61,8 +63,12 @@ export let lexer = moo.states({
         endtag: { match: /ENDSEC/, pop: true },
     },
     // Resolves anything inside single or double quotes.
-    string: {
-        quote: { match: /\'|\"/, pop: true },
-        string: { match: /[^\"|\']+/, lineBreaks: true }
+    snglqt_str: {
+        snglquote: { match: /\'/, pop: true },
+        string: { match: /[^\']+/, lineBreaks: true }
+    },
+    dblqt_str: {
+        dblquote: { match: /\"/, pop: true },
+        string: { match: /[^\"]+/, lineBreaks: true }
     },
 })
