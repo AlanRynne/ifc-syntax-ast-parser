@@ -34,7 +34,7 @@ main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close
 header_section -> tag_header _ header_entities _ tag_end_sec {% (data) => {
     return new Nodes.SectionNode(
         data[0],
-        data[2][0],
+        data[2],
         new ASTLocation(
             data[0].loc.start,
             data[4].loc.end
@@ -44,32 +44,41 @@ header_section -> tag_header _ header_entities _ tag_end_sec {% (data) => {
 
 
 # Resolves a collection of header entities
-header_entities -> header_entity (_ header_entity):*
+header_entities -> header_entity (_ header_entity):* {% (data) => {
+    var d = [data[0]]
+    for(let i in data[1]){
+        d.push(data[1][i][1])
+    }
+    return d;
+}%}
 
 
 # Resolves a header entity declaration
-header_entity -> %word _ %lparen _ header_inputs _ %rparen %eol {% (data) => {
+header_entity -> comment {% first %} | %word _ %lparen _ header_inputs _ %rparen %eol {% (data) => {
     return new Nodes.FunctionNode(
         data[0].value,
         data[4],
         new ASTLocation(data[2].offset,data[7].offset + data[7].text.length)
         )
-}%} | comment
+}%}
 
 
 # Unfolds the nested list of header inputs into a single list
 header_inputs -> header_input (_ %separator _ header_input):* {% data => {
     var d = [data[0]]
-    for(let i in data[2]){
-        d.push(data[2][i][3])
+    for(let i in data[1]){
+        d = d.concat(data[1][i][3])
     }
     return d;
 } %}
 
-header_input -> comment _ header_input_raw | header_input_raw
+header_input -> comment _ header_input_raw {% (data) => [data[0],data[2]] %}
+                | header_input_raw {% first %}
 # Resolves all valid header inputs (currently just strings?)
 # TODO: Fix resolver
-header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen | %dollar | string
+header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen 
+                    | null_node {% first %}
+                    | string {% first %}
 
 # ----
 # DATA SECTION
