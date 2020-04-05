@@ -71,11 +71,9 @@ header_input -> comment _ header_input_raw | header_input_raw
 # TODO: Fix resolver
 header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen | %dollar | string
 
-
 # ----
 # DATA SECTION
 # ----
-
 
 # Resolves the complete data section of the IFC file
 data_section -> tag_data _ data_entities:? _ tag_end_sec {% (data) => {
@@ -123,18 +121,19 @@ constructor_values -> constructor_value:?
     }
     return d;
 }%}
-
+constructor_value -> constructor_value_raw
 # TODO: i thinks the memory leak is the circular reference between constructor_values and constructor_value
 # TODO: Check solution in head and do the same (step by step rules)
 # Resolves all valid values inside a constructor
-constructor_value -> (    null_node 
-                        | string
-                        | var 
-                        | enum_member 
-                        | number 
-                        | data_entity_constructor 
-                     ) {% (data) => data[0][0] %}
-                     | %lparen constructor_values %rparen {% (data) => data[1] %}
+constructor_value_raw -> (  null_node 
+                            | string
+                            | var 
+                            | enum_member 
+                            | number 
+                            | data_entity_constructor 
+                         ) {% (data) => data[0][0] %}
+                        |%lparen constructor_values %rparen {% (data) => data[1] %}
+                     
 
 var -> %ref {% data => {
     return new Nodes.VariableNode(data[0].value,new ASTLocation(data[0].offset,data[0].offset+data[0].text.length))

@@ -64,11 +64,11 @@ export let lexer = moo.states({
     },
     // Resolves anything inside single or double quotes.
     snglqt_str: {
-        snglquote: { match: /\'/, pop: true },
-        string: { match: /[^\']+/, lineBreaks: true }
+        string: { match: /[^\']+/, lineBreaks: true },
+        snglquote: { match: /\'/, pop: true }
     },
     dblqt_str: {
-        dblquote: { match: /\"/, pop: true },
-        string: { match: /[^\"]+/, lineBreaks: true }
+        string: { match: /[^\"]+/, lineBreaks: true },
+        dblquote: { match: /\"/, pop: true }
     },
 })

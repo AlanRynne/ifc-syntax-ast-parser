@@ -20,7 +20,7 @@ describe("IFC files", () => {
         it(file, async () => {
             const results = await ParseIFCLineByLine(file, outFile);
             return expect(results.length).toBe(1);
-        })
+        }, 10000)
     })
 });
 
@@ -50,21 +50,32 @@ export async function ParseIFCLineByLine(path: string, outPath: string): Promise
 }
 
 async function readLines(path: string, outPath: string): Promise<any> {
+    let currLine = 0;
     const stream = fs.createReadStream(path)
     const rl = readline.createInterface({
         input: stream,
         crlfDelay: Infinity
     });
-    const ifcParser = new nearley.Parser(nearley.Grammar.fromCompiled(ifcGrammar))
-
+    const ifcParser = new nearley.Parser(ifcGrammar, { keepHistory: true })
+    let lastState = ifcParser.save()
     return new Promise<boolean>(resolve => {
         stream.once('error', _ => resolve(false))
 
         rl.on('open', _ => console.time('byline'))
 
-        rl.on('line', line =>
-            ifcParser.feed(line)
-        );
+        rl.on('line', line => {
+            line.trim()
+            // If feeding fails, roll back
+            try {
+                if (line.length > 10000) console.error(`File ${path} Line ${currLine} is too long to be parsed`)
+                ifcParser.feed(line)
+                lastState = ifcParser.save()
+            } catch (error) {
+                console.log(`Error on file ${path} line ${currLine}`)
+                ifcParser.restore(lastState)
+            }
+            currLine++
+        });
 
         rl.on('close', _ => {
             console.timeEnd('byline')
