@@ -86,7 +86,8 @@ async function readLines(path: string, outPath: string): Promise<any> {
                 // console.log('line', ifcParser.lexerState.line)
                 lastState = ifcParser.save()
             } catch (error) {
-                console.error(`Error on file ${path} line ${currLine}`, error.message.substr(0, 500))
+                console.error(`Error on file ${path} line ${currLine}`, error.message)
+                throw error
                 ifcParser.restore(lastState)
             }
             currLine++

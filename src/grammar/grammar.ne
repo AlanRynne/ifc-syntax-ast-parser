@@ -55,7 +55,7 @@ header_entities -> header_entity (_ header_entity):* {% (data) => {
 
 
 # Resolves a header entity declaration
-header_entity -> comment {% first %} 
+header_entity -> comment _ newline {% first %} 
                 | %word _ %lparen newline:? _ header_inputs _ %rparen %eol newline {% (data) => {
                         return new Nodes.FunctionNode(
                             data[0].value,
@@ -66,7 +66,7 @@ header_entity -> comment {% first %}
 
 
 # Unfolds the nested list of header inputs into a single list
-header_inputs -> header_input (_ %separator _ newline:? _ header_input):* {% data => {
+header_inputs -> header_input (spls:? _ %separator spls:? _ header_input):* {% data => {
     var d = [data[0]]
     for(let i in data[1]){
         d = d.concat(data[1][i][5])
@@ -79,9 +79,15 @@ header_input -> singleline_cmnt _ header_input_raw {% (data) => [data[0],data[2]
 
 # Resolves all valid header inputs (currently just strings?)
 # TODO: Fix resolver
-header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen 
+header_input_raw -> %lparen spls:? _ header_input (spls:? _ %separator spls:? _ header_input):* spls:? _ %rparen 
                     | null_node {% first %}
                     | string {% first %}
+
+
+# One or many lines with leading space
+spls -> spl:+
+# Line char with leading space
+spl -> %space:? %newline
 
 # ----
 # DATA SECTION
@@ -109,13 +115,13 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
 
 
 # Resolves an IFC entity declaration
-data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt _):? newline {% (data) => {
+data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):? _ newline {% (data) => {
     return new Nodes.AssignmentNode(
         data[0],
         data[4],
         new ASTLocation(data[0].loc.start,data[5].offset + data[5].text.length)
     )
-} %} | comment
+} %} | comment _ newline
 
 
 # Resolves an IFC constructor function
@@ -204,13 +210,13 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> multiline_cmnt | singleline_cmnt newline
+comment -> multiline_cmnt | singleline_cmnt
 # {% (data) =>  {
 #     let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
 #     return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
 # } %}
 
-multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end newline
+multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end
 
 singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end
 
