@@ -55,27 +55,26 @@ header_entities -> header_entity (_ header_entity):* {% (data) => {
 
 
 # Resolves a header entity declaration
-header_entity -> %newline {% first %} 
-                | comment {% first %} 
-                | %word _ %lparen _ header_inputs _ %rparen %eol %newline {% (data) => {
+header_entity -> comment {% first %} 
+                | %word _ %lparen newline:? _ header_inputs _ %rparen %eol newline {% (data) => {
                         return new Nodes.FunctionNode(
                             data[0].value,
-                            data[4],
+                            data[5],
                             new ASTLocation(data[2].offset,data[7].offset + data[7].text.length)
                             )
                     }%}
 
 
 # Unfolds the nested list of header inputs into a single list
-header_inputs -> header_input (_ %separator _ header_input):* {% data => {
+header_inputs -> header_input (_ %separator _ newline:? _ header_input):* {% data => {
     var d = [data[0]]
     for(let i in data[1]){
-        d = d.concat(data[1][i][3])
+        d = d.concat(data[1][i][5])
     }
     return d;
 } %}
 
-header_input -> comment _ header_input_raw {% (data) => [data[0],data[2]] %}
+header_input -> singleline_cmnt _ header_input_raw {% (data) => [data[0],data[2]] %}
                 | header_input_raw {% first %}
 
 # Resolves all valid header inputs (currently just strings?)
@@ -110,13 +109,13 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
 
 
 # Resolves an IFC entity declaration
-data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt _):? %newline {% (data) => {
+data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt _):? newline {% (data) => {
     return new Nodes.AssignmentNode(
         data[0],
         data[4],
-        new ASTLocation(data[0].loc.start,data[7].offset + data[7].text.length)
+        new ASTLocation(data[0].loc.start,data[5].offset + data[5].text.length)
     )
-} %} | %newline
+} %} | comment
 
 
 # Resolves an IFC constructor function
@@ -160,7 +159,7 @@ null_node -> (%dollar | %star) {% data => {
 # TAGS
 # ----
 
-tag_header -> %headertag %eol %newline {% (data) => {
+tag_header -> %headertag %eol newline {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
@@ -168,16 +167,7 @@ tag_header -> %headertag %eol %newline {% (data) => {
             data[1].offset + data[1].text.length))
 } %}
 
-tag_data -> %datatag %eol %newline {% (data) => {
-    return new Nodes.KeywordNode(
-        data[0].value,
-        new ASTLocation(
-            data[0].offset, 
-            data[1].offset + data[1].text.length))
-} %}
-
-
-tag_end_sec -> %endtag %eol %newline {% (data) => {
+tag_data -> %datatag %eol newline {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
@@ -186,9 +176,18 @@ tag_end_sec -> %endtag %eol %newline {% (data) => {
 } %}
 
 
-tag_iso_open -> %isotag %eol %newline {% first %}
+tag_end_sec -> %endtag %eol newline {% (data) => {
+    return new Nodes.KeywordNode(
+        data[0].value,
+        new ASTLocation(
+            data[0].offset, 
+            data[1].offset + data[1].text.length))
+} %}
 
-tag_iso_close -> %isoclosetag %eol %newline {% first %}
+
+tag_iso_open -> %isotag %eol newline {% first %}
+
+tag_iso_close -> %isoclosetag %eol newline {% first %}
 
 
 # ----
@@ -205,17 +204,17 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> multiline_cmnt | singleline_cmnt
+comment -> multiline_cmnt | singleline_cmnt newline
 # {% (data) =>  {
 #     let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
 #     return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
 # } %}
 
-multiline_cmnt -> %cmnt_strt %newline (cmnt_content %newline):* %cmnt_end %newline
+multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end newline
 
 singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end
 
-cmnt_content -> %cmnt_line (_ %cmnt_line):+
+cmnt_content -> %cmnt_line (_ %cmnt_line):* | newline
 
 enum_member -> "." %word "." {% data => { 
     return new Nodes.EnumMemberNode(data[1].value, new ASTLocation(data[0].offset, data[2].offset + data[2].text.length))
@@ -245,4 +244,8 @@ decimal -> int "." int:? {% (data) => {
 
 int -> %int {% ([token]) => new Nodes.NumberNode(parseFloat(token.value),new ASTLocation(token.offset,token.offset+token.text.length)) %}
 
-_ -> null | %space {% function(d) { return null; } %} 
+newline -> %newline (_ %newline):*
+
+WS -> WS _ %newline:? 
+
+_ -> null | %space:+ {% function(d) { return null; } %} 
