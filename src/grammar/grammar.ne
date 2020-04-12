@@ -87,7 +87,7 @@ header_input_raw -> %lparen spls:? _ header_input (spls:? _ %separator spls:? _ 
 # One or many lines with leading space
 spls -> spl:+
 # Line char with leading space
-spl -> %space:? %newline
+spl -> _ %newline
 
 # ----
 # DATA SECTION
@@ -139,7 +139,7 @@ constructor_values -> constructor_value:?
     }
     return d;
 }%}
-constructor_value -> constructor_value_raw
+constructor_value -> singleline_cmnt _ constructor_value_raw | constructor_value_raw
 # TODO: i thinks the memory leak is the circular reference between constructor_values and constructor_value
 # TODO: Check solution in head and do the same (step by step rules)
 # Resolves all valid values inside a constructor
@@ -210,7 +210,7 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> multiline_cmnt | singleline_cmnt
+comment -> multiline_cmnt | singleline_cmnt {% first %}
 # {% (data) =>  {
 #     let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
 #     return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
@@ -218,9 +218,23 @@ comment -> multiline_cmnt | singleline_cmnt
 
 multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end
 
-singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end
+singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end {% (data) => {
+    return new Nodes.CommentNode(
+        data[2],
+        new ASTLocation(data[0].offset, data[4].offset + data[4].text.length)
+    )
+} %}
 
-cmnt_content -> %cmnt_line (_ %cmnt_line):* | newline
+cmnt_content -> %cmnt_line (_ %cmnt_line):* {%
+    (data) => {
+        var d = [data[0].text]
+        for(let i in data[1]){
+            if(data[1][i][0] == null) d.push(' ')
+            d.push(data[1][i][1].text)
+        }
+        return d.join('');
+    }
+%}
 
 enum_member -> "." %word "." {% data => { 
     return new Nodes.EnumMemberNode(data[1].value, new ASTLocation(data[0].offset, data[2].offset + data[2].text.length))
@@ -248,10 +262,11 @@ decimal -> int "." int:? {% (data) => {
     return new Nodes.NumberNode(parseFloat(text),new ASTLocation(data[0].loc.start,data[2]?data[2].loc.end:data[0].loc.end+1))
 }%}
 
-int -> %int {% ([token]) => new Nodes.NumberNode(parseFloat(token.value),new ASTLocation(token.offset,token.offset+token.text.length)) %}
+int -> %int 
+{% 
+    ([token]) => new Nodes.NumberNode(parseFloat(token.value),new ASTLocation(token.offset,token.offset+token.text.length)) 
+%}
+
 
 newline -> %newline (_ %newline):*
-
-WS -> WS _ %newline:? 
-
 _ -> null | %space:+ {% function(d) { return null; } %} 

@@ -76,19 +76,12 @@ async function readLines(path: string, outPath: string): Promise<any> {
             // line.trim()
             // If feeding fails, roll back
             try {
-                // if (ifcParser.lexerState) {
-                //     ifcParser.lexerState.line = currLine
-                //     ifcParser.lexerState.col = 0
-                //     lastState = ifcParser.save()
-                // }
                 ifcParser.feed(line + '\n')
-                // if (ifcParser.lexerState.line != currLine) throw new Error('Error counting line numbers!!')
-                // console.log('line', ifcParser.lexerState.line)
                 lastState = ifcParser.save()
             } catch (error) {
-                console.error(`Error on file ${path} line ${currLine}`, error.message)
+                // console.error(`Error on file ${path} line ${currLine}`, error.message)
+                // ifcParser.restore(lastState)
                 throw error
-                ifcParser.restore(lastState)
             }
             currLine++
         });

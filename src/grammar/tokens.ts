@@ -32,7 +32,7 @@ export let lexer = moo.states({
     },
     cmnt: {
         cmnt_end: { match: /\*+\//, pop: true },
-        cmnt_line: { match: /[^\s\\]+/ }
+        cmnt_line: { match: /[^\s\\]+?/ }
     },
     // IFC entity declaration
     entity: {
