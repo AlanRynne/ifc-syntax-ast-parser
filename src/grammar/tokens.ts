@@ -4,8 +4,9 @@ import moo from 'moo'
 export let lexer = moo.states({
     // Rules that apply to every state.
     $all: {
-        space: { match: /\s+/, lineBreaks: true },
-        eol: { match: /;\s*/, lineBreaks: true },
+        space: /[ \t]+/,
+        eol: { match: ";" },
+        newline: { match: /\n/, lineBreaks: true },
     },
     // Main rules
     main: {
@@ -37,7 +38,7 @@ export let lexer = moo.states({
     entity: {
         word: { match: /[\w\d]+/ },
         lparen: { match: /\(/, push: 'input' },
-        eol: { match: /;\s*/, pop: true },
+        eol: { match: ";", pop: true },
         err: moo.error
     },
     // Resolves anything inside the constructor parenthesis, including nested parenthesis.

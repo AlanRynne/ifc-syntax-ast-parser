@@ -5,6 +5,7 @@ import { lexer } from './tokens'
 import { first } from './functions'
 import * as Nodes from "@/ast/nodes";
 import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
+
 %}
 
 @lexer lexer
@@ -15,7 +16,7 @@ import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
 # ----
 
 # Resolves the complete IFC file
-main_section -> tag_iso_open _ header_section:? _ data_section:? _ tag_iso_close {% (data: any) => {
+main_section -> tag_iso_open _ header_section _ data_section _ tag_iso_close {% (data: any) => {
     return new Nodes.DocumentNode(
         data[0].value,
         [data[2], data[4]], 
@@ -54,13 +55,15 @@ header_entities -> header_entity (_ header_entity):* {% (data) => {
 
 
 # Resolves a header entity declaration
-header_entity -> comment {% first %} | %word _ %lparen _ header_inputs _ %rparen %eol {% (data) => {
-    return new Nodes.FunctionNode(
-        data[0].value,
-        data[4],
-        new ASTLocation(data[2].offset,data[7].offset + data[7].text.length)
-        )
-}%}
+header_entity -> %newline {% first %} 
+                | comment {% first %} 
+                | %word _ %lparen _ header_inputs _ %rparen %eol %newline {% (data) => {
+                        return new Nodes.FunctionNode(
+                            data[0].value,
+                            data[4],
+                            new ASTLocation(data[2].offset,data[7].offset + data[7].text.length)
+                            )
+                    }%}
 
 
 # Unfolds the nested list of header inputs into a single list
@@ -74,6 +77,7 @@ header_inputs -> header_input (_ %separator _ header_input):* {% data => {
 
 header_input -> comment _ header_input_raw {% (data) => [data[0],data[2]] %}
                 | header_input_raw {% first %}
+
 # Resolves all valid header inputs (currently just strings?)
 # TODO: Fix resolver
 header_input_raw -> %lparen _ header_input (_ %separator _ header_input):* _ %rparen 
@@ -106,13 +110,13 @@ data_entities -> data_entity (_ data_entity):* {% (data) => {
 
 
 # Resolves an IFC entity declaration
-data_entity -> var _ %assign _ data_entity_constructor _ %eol {% (data) => {
+data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt _):? %newline {% (data) => {
     return new Nodes.AssignmentNode(
         data[0],
         data[4],
-        new ASTLocation(data[0].loc.start,data[6].offset + data[6].text.length)
-        )
-} %} | comment {% first %}
+        new ASTLocation(data[0].loc.start,data[7].offset + data[7].text.length)
+    )
+} %} | %newline
 
 
 # Resolves an IFC constructor function
@@ -156,7 +160,7 @@ null_node -> (%dollar | %star) {% data => {
 # TAGS
 # ----
 
-tag_header -> %headertag %eol _ {% (data) => {
+tag_header -> %headertag %eol %newline {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
@@ -164,16 +168,7 @@ tag_header -> %headertag %eol _ {% (data) => {
             data[1].offset + data[1].text.length))
 } %}
 
-tag_data -> %datatag %eol {% (data) => {
-    return new Nodes.KeywordNode(
-        data[0].value,
-        new ASTLocation(
-            data[0].offset, 
-            data[1].offset + data[1].text.length))
-} %}
-
-
-tag_end_sec -> %endtag %eol {% (data) => {
+tag_data -> %datatag %eol %newline {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
         new ASTLocation(
@@ -182,9 +177,18 @@ tag_end_sec -> %endtag %eol {% (data) => {
 } %}
 
 
-tag_iso_open -> %isotag %eol {% first %}
+tag_end_sec -> %endtag %eol %newline {% (data) => {
+    return new Nodes.KeywordNode(
+        data[0].value,
+        new ASTLocation(
+            data[0].offset, 
+            data[1].offset + data[1].text.length))
+} %}
 
-tag_iso_close -> %isoclosetag %eol {% first %}
+
+tag_iso_open -> %isotag %eol %newline {% first %}
+
+tag_iso_close -> %isoclosetag %eol %newline {% first %}
 
 
 # ----
@@ -201,10 +205,17 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> %cmnt_strt ((null | %space {% first %}) %cmnt_line):* (null | %space {% first %}) %cmnt_end {% (data) =>  {
-    let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
-    return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
-} %}
+comment -> multiline_cmnt | singleline_cmnt
+# {% (data) =>  {
+#     let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
+#     return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
+# } %}
+
+multiline_cmnt -> %cmnt_strt %newline (cmnt_content %newline):* %cmnt_end %newline
+
+singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end
+
+cmnt_content -> %cmnt_line (_ %cmnt_line):+
 
 enum_member -> "." %word "." {% data => { 
     return new Nodes.EnumMemberNode(data[1].value, new ASTLocation(data[0].offset, data[2].offset + data[2].text.length))
@@ -234,4 +245,4 @@ decimal -> int "." int:? {% (data) => {
 
 int -> %int {% ([token]) => new Nodes.NumberNode(parseFloat(token.value),new ASTLocation(token.offset,token.offset+token.text.length)) %}
 
-_ -> null | %space {% function(d) { return null; } %}
+_ -> null | %space {% function(d) { return null; } %} 
