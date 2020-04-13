@@ -67,9 +67,12 @@ header_entity -> comment _ newline {% first %}
 
 # Unfolds the nested list of header inputs into a single list
 header_inputs -> header_input (spls:? _ %separator spls:? _ header_input):* {% data => {
-    var d = [data[0]]
+    
+    var d = Array.isArray(data[0]) ? data[0] : [data[0]]
     for(let i in data[1]){
-        d = d.concat(data[1][i][5])
+        let di = data[1][i][5]
+        if(Array.isArray(di)) d.push(...di)
+        else d.push(di)
     }
     return d;
 } %}
@@ -79,7 +82,18 @@ header_input -> singleline_cmnt _ header_input_raw {% (data) => [data[0],data[2]
 
 # Resolves all valid header inputs (currently just strings?)
 # TODO: Fix resolver
-header_input_raw -> %lparen spls:? _ header_input (spls:? _ %separator spls:? _ header_input):* spls:? _ %rparen 
+header_input_raw -> %lparen spls:? _ header_input (spls:? _ %separator spls:? _ header_input):* spls:? _ %rparen {% (data) => {
+                        var d = Array.isArray(data[3]) ? data[3] : [data[3]]
+                        for(let i in data[4]){
+                            let di = data[4][i][5]
+                            if(Array.isArray(di)) d.push(...di)
+                            else d.push(di)
+                        }
+                        return new Nodes.ArrayNode(
+                            d,
+                            new ASTLocation(data[0].offset,data[7].offset + data[7].text.length)
+                        )
+                    }%}
                     | null_node {% first %}
                     | string {% first %}
 
@@ -121,7 +135,7 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
         data[4],
         new ASTLocation(data[0].loc.start,data[5].offset + data[5].text.length)
     )
-} %} | comment _ newline
+} %} | comment _ newline {% first %}
 
 
 # Resolves an IFC constructor function
@@ -131,7 +145,7 @@ data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) 
 
 
 # Resolves the arguments of a constructor function (but could be any function if need be)
-constructor_values -> constructor_value:? 
+constructor_values -> constructor_value:? {% first %}
                     | constructor_value _ (%separator _ constructor_value):+ {% (data) => {
     var d = [data[0]];
     for(let i in data[2]) {
@@ -139,7 +153,7 @@ constructor_values -> constructor_value:?
     }
     return d;
 }%}
-constructor_value -> singleline_cmnt _ constructor_value_raw | constructor_value_raw
+constructor_value -> singleline_cmnt _ constructor_value_raw  {% (data) => data[2] %} | constructor_value_raw {% first %}
 # TODO: i thinks the memory leak is the circular reference between constructor_values and constructor_value
 # TODO: Check solution in head and do the same (step by step rules)
 # Resolves all valid values inside a constructor
@@ -200,7 +214,7 @@ tag_iso_close -> %isoclosetag %eol newline {% first %}
 # BASICS
 # ----
 
-string -> single_quote_string | double_quote_string
+string -> single_quote_string {% first %} | double_quote_string {% first %}
 
 double_quote_string -> %dblquote %string:? %dblquote {% data => { 
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
@@ -210,13 +224,22 @@ single_quote_string -> %snglquote %string:? %snglquote {% data => {
     return new Nodes.StringNode(data[1]?data[1].text:null, new ASTLocation(data[0].offset,data[2].offset + data[2].text.length)) 
 }%}
 
-comment -> multiline_cmnt | singleline_cmnt {% first %}
+comment -> multiline_cmnt {% first %} | singleline_cmnt {% first %}
 # {% (data) =>  {
 #     let commnt = data[1].map(val => val[0].text ? val[0].text + val[1].text : val[1].text).join('')
 #     return new Nodes.CommentNode(commnt,new ASTLocation(data[0].offset, data[3].offset + data[3].text.length))
 # } %}
 
-multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end
+multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end {% (data) => {
+    let d = ''
+    for(let i in data[2]){
+        d += data[2][i][0] + `\n`
+    }
+    return new Nodes.CommentNode(
+        d,
+        new ASTLocation(data[0].offset, data[3].offset + data[3].text.length)
+    )
+} %}
 
 singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end {% (data) => {
     return new Nodes.CommentNode(
