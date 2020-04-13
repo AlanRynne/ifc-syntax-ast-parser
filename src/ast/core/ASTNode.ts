@@ -8,6 +8,8 @@ export class ASTNode implements IVisitable {
 
     readonly type: ASTType
     readonly loc: ASTLocation
+    comment?: ASTNode
+    errors?: Error[]
 
     /**
      * Constructs a Base AST Node
@@ -18,6 +20,9 @@ export class ASTNode implements IVisitable {
 
     }
 
+    /** 
+     * Visiting pattern method
+    **/
     public accept(v: IVisitor): void {
         v.visit(this)
     }
