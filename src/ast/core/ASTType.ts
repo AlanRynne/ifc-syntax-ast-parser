@@ -1,16 +1,16 @@
 export enum ASTType {
+    Array,
+    Assignment,
+    Comment,
     Constructor,
     Document,
     Enum,
+    Function,
+    Keyword,
     Null,
     Number,
     Property,
     Section,
     String,
-    Assignment,
-    Variable,
-    Function,
-    Keyword,
-    Comment,
-    Array
+    Variable
 }

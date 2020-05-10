@@ -3,8 +3,9 @@ import * as nearley from 'nearley'
 import dir from 'node-dir'
 import path from 'path'
 import readline from 'readline'
-import { ASTVisitor } from "./ast/visitor/ASTVisitor"
-import ifcGrammar from './main'
+import { ASTDefinitionFinderVisitor, ASTDefinitionVisitor } from "./ast/visitor/ASTVisitor"
+import ifcGrammar, { Ifc2Ast } from './main'
+import { DocumentNode } from './ast/nodes'
 
 
 const INDIR = "examples"
@@ -19,7 +20,7 @@ describe("IFC files line by line", () => {
         let outFile = path.join(OUTDIR, name) + ".json"
         it(file, async () => {
             const results = await ParseIFCLineByLine(file, outFile);
-            return expect(results.length).toBe(1);
+            return expect(results).toBeInstanceOf(DocumentNode);
         }, 10000)
     })
 });
@@ -42,8 +43,8 @@ function mainIfcParserTest(path: string, outPath: string) {
     ifcParser.feed(content)
     console.timeEnd('alltext')
     writeToPath(ifcParser.results, outPath);
-    let v = new ASTVisitor()
-    v.visit(ifcParser.results[0])
+    let v = new ASTDefinitionFinderVisitor()
+    // v.visit(ifcParser.results[0])
     expect(ifcParser.results.length).toBe(1);
 }
 
@@ -60,7 +61,7 @@ export async function ParseIFCLineByLine(path: string, outPath: string): Promise
     return readLines(path, outPath)
 }
 
-async function readLines(path: string, outPath: string): Promise<any> {
+async function readLines(path: string, outPath: string) {
     let currLine = 1;
     const stream = fs.createReadStream(path)
     const rl = readline.createInterface({
@@ -69,10 +70,12 @@ async function readLines(path: string, outPath: string): Promise<any> {
     });
     const ifcParser = new nearley.Parser(ifcGrammar, { keepHistory: true })
     let lastState = ifcParser.save()
-    return new Promise<boolean>(resolve => {
-        stream.once('error', _ => resolve(false))
+    let lines: string[] = []
+    let res = await new Promise<DocumentNode>((resolve, reject) => {
+        stream.once('error', (err) => reject(err))
 
         rl.on('line', (line) => {
+            lines.push(line)
             // line.trim()
             // If feeding fails, roll back
             try {
@@ -88,8 +91,21 @@ async function readLines(path: string, outPath: string): Promise<any> {
 
         rl.on('close', _ => {
             console.timeEnd('byline')
+            let v = new ASTDefinitionVisitor()
+            let vr = v.visit(ifcParser.results[0])
             writeToPath(ifcParser.results, outPath);
+            let results = ifcParser.results;
+            if (results.length > 1) reject('Results are ambiguous! :(')
             resolve(ifcParser.results)
         });
-    });
+    }).then((document) => {
+        let astParser = new Ifc2Ast()
+        return astParser.parseIfcFile(lines, true)
+            .then((node) => {
+                return node
+            }).catch((err) => {
+                return null
+            })
+    })
+    return res;
 }

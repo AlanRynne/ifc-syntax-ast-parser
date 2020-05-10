@@ -1,35 +1,98 @@
 import { ASTNode } from "../core/ASTNode";
-import { StringNode } from "../nodes/StringNode";
 import { IVisitor } from "./IVisitor";
-import { ConstructorNode, AssignmentNode, DocumentNode, EnumMemberNode, FunctionNode, KeywordNode, NullNode, NumberNode, SectionNode, VariableNode } from "../nodes";
+import * as nodes from "../nodes";
+import { ASTPosition } from '../core/ASTPosition';
 
-export class ASTVisitor implements IVisitor {
-    visit(node: ASTNode): void {
-        if (node instanceof AssignmentNode) {
-            console.log(node.type)
-        } else if (node instanceof ConstructorNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof DocumentNode) {
-            console.log(node.constructor.name)
-            node.sections.forEach(sec => sec.accept(this))
-        } else if (node instanceof EnumMemberNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof FunctionNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof KeywordNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof NullNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof NumberNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof SectionNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof StringNode) {
-            console.log(node.constructor.name)
-        } else if (node instanceof VariableNode) {
-            console.log(node.constructor.name)
+export class ASTDefinitionFinderVisitor implements IVisitor {
+
+    visit(node: ASTNode, refNum: number): any {
+        if (node instanceof nodes.AssignmentNode) {
+            if (node.name.accept(this, refNum) == true)
+                return node
+        } else if (node instanceof nodes.DocumentNode) {
+            let secs: any[] = []
+            node.sections.forEach(sec => {
+                let sectionResult = sec.accept(this, refNum)
+                if (sectionResult) secs.push(...sectionResult)
+            })
+            return secs
+        } else if (node instanceof nodes.VariableNode) {
+            if (node.id == refNum) {
+                return true
+            }
+        } else if (node instanceof nodes.SectionNode) {
+            let keyword = node.name.accept(this, refNum)
+            if (keyword == "DATA") {
+                let result: any[] = []
+                node.children.forEach(child => {
+                    let d = child.accept(this, refNum)
+                    if (d) result.push(d)
+                })
+                return result
+            }
         } else {
             console.log("Other node: " + node.constructor.name)
         }
+    }
+}
+
+export class ASTDefinitionVisitor implements IVisitor {
+
+    visit(node: ASTNode): nodes.AssignmentNode[] | void {
+        if (node instanceof nodes.AssignmentNode) {
+            return [node]
+        } else if (node instanceof nodes.DocumentNode) {
+            let secs: any[] = []
+            node.sections.forEach(sec => {
+                let sectionResult = sec.accept(this)
+                if (sectionResult) secs.push(...sectionResult)
+            })
+            return secs
+        } else if (node instanceof nodes.SectionNode) {
+            let name: any = node.name
+            if (name.text == "DATA") {
+                let result: any[] = []
+                node.children.forEach(child => {
+                    let d = child.accept(this)
+                    if (d) result.push(...d)
+                })
+                return result
+            }
+        } else {
+            // console.log("Other node: " + node.constructor.name)
+        }
+    }
+}
+export class ASTPositionVisitor implements IVisitor {
+    visit(node: ASTNode, position: ASTPosition): any {
+        if (node.loc.contains(position))
+            if (node instanceof nodes.AssignmentNode) {
+                if (node.name.accept(this, position) == true)
+                    return node
+            } else if (node instanceof nodes.DocumentNode) {
+                node.loc.contains(position)
+                let secs: any[] = []
+                node.sections.forEach(sec => {
+                    let sectionResult = sec.accept(this, position)
+                    if (sectionResult) secs.push(...sectionResult)
+                })
+                return secs
+            } else if (node instanceof nodes.VariableNode) {
+
+            } else if (node instanceof nodes.KeywordNode) {
+                return node.text
+            } else if (node instanceof nodes.SectionNode) {
+                let keyword = node.name.accept(this, position)
+                if (keyword == "DATA") {
+                    let result: any[] = []
+                    node.children.forEach(child => {
+                        let d = child.accept(this, position)
+                        if (d) result.push(d)
+                    })
+                    return result
+                }
+            } else {
+                console.log("Other node: " + node.constructor.name)
+            }
     }
 }

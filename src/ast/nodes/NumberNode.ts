@@ -1,4 +1,4 @@
-import { ASTType, ASTNode, ASTLocation } from "../index";
+import { ASTType, ASTNode, ASTRange } from "../index";
 import { IVisitor } from "../visitor/IVisitor";
 
 export class NumberNode extends ASTNode {
@@ -9,13 +9,9 @@ export class NumberNode extends ASTNode {
      * Constructs an AST String node
      * @param text 
     **/
-    constructor(value: number, location: ASTLocation) {
+    constructor(value: number, location: ASTRange) {
         super(ASTType.Number, location);
         this.value = value
-    }
-
-    public accept(v: IVisitor) {
-        v.visit(this)
     }
 }
 

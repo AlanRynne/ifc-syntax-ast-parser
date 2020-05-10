@@ -4,7 +4,7 @@
 import { lexer } from './tokens'
 import { first } from './functions'
 import * as Nodes from "@/ast/nodes";
-import { ASTType, ASTNode, ASTLocation } from "@/ast/index";
+import { ASTType, ASTNode, ASTRange } from "@/ast/index";
 
 %}
 
@@ -21,7 +21,7 @@ main_section -> tag_iso_open _ header_section _ data_section _ tag_iso_close
     return new Nodes.DocumentNode(
         data[0].value,
         [data[2], data[4]], 
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[6].offset + data[6].text.length,
             data[0].line,
@@ -38,7 +38,7 @@ header_section -> tag_header _ header_entities _ tag_end_sec
     return new Nodes.SectionNode(
         data[0],
         data[2],
-        new ASTLocation(
+        new ASTRange(
             data[0].loc.start,
             data[4].loc.end,
             data[0].loc.startLine,
@@ -65,7 +65,7 @@ header_entity -> comment _ newline {% first %}
                         return new Nodes.FunctionNode(
                             data[0].value,
                             data[5],
-                            new ASTLocation(
+                            new ASTRange(
                                 data[2].offset,
                                 data[7].offset + data[7].text.length,
                                 data[2].line,
@@ -94,7 +94,7 @@ header_input -> singleline_cmnt _ header_input_raw {% (data) => [data[0],data[2]
 header_input_raw -> %lparen spls:? _ header_inputs spls:? _ %rparen {% (data) => {
                         return new Nodes.ArrayNode(
                             data[3],
-                            new ASTLocation(
+                            new ASTRange(
                                 data[0].offset,
                                 data[6].offset + data[6].text.length,
                                 data[0].line,
@@ -113,7 +113,7 @@ data_section -> tag_data _ data_entities:? _ tag_end_sec {% (data) => {
     return new Nodes.SectionNode(
         data[0],
         data[2],
-        new ASTLocation(
+        new ASTRange(
             data[0].loc.start,
             data[4].loc.end,
             data[0].line,
@@ -136,7 +136,7 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
     return new Nodes.AssignmentNode(
         data[0],
         data[4],
-        new ASTLocation(
+        new ASTRange(
             data[0].loc.start,
             data[5].offset + data[5].text.length,
             data[0].loc.startLine,
@@ -149,7 +149,7 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
 data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) => {
     return new Nodes.ConstructorNode(
         data[0].value,
-        data[3],new ASTLocation(
+        data[3],new ASTRange(
             data[0].offset,
             data[4].offset + data[4].text.length,
             data[0].line,
@@ -158,14 +158,13 @@ data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) 
 
 
 # Resolves the arguments of a constructor function (but could be any function if need be)
-constructor_values -> constructor_value:? {% first %}
-                    | constructor_value _ (%separator _ constructor_value):+ {% (data) => {
+constructor_values -> constructor_value (_ %separator _ constructor_value):* {% (data) => {
     var d = [data[0]];
-    for(let i in data[2]) {
-        d.push(data[2][i][2])
+    for(let i in data[1]) {
+        d.push(data[1][i][3])
     }
     return d;
-}%}
+}%} | null
 
 
 constructor_value -> singleline_cmnt _ constructor_value_raw  {% (data) => data[2] %} | constructor_value_raw {% first %}
@@ -183,7 +182,7 @@ constructor_value_raw -> (  null_node
                         ) {% (data) => data[0][0] %}
                         |%lparen constructor_values %rparen {% (data) => new Nodes.ArrayNode(
                             data[1],
-                            new ASTLocation(
+                            new ASTRange(
                                 data[0].offset,
                                 data[2].offset + data[2].text.length,
                                 data[0].line,
@@ -194,7 +193,7 @@ var -> %ref
 {% data => {
     return new Nodes.VariableNode(
         data[0].value,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset,
             data[0].offset+data[0].text.length,
             data[0].line,
@@ -205,7 +204,7 @@ null_node -> (%dollar | %star)
 {% data => {
     return new Nodes.NullNode(
         data[0][0].text, 
-        new ASTLocation(
+        new ASTRange(
             data[0][0].offset,
             data[0][0].offset+1,
             data[0][0].line,
@@ -220,7 +219,7 @@ tag_header -> %headertag %eol newline
 {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[1].offset + data[1].text.length,
             data[0].line,
@@ -231,7 +230,7 @@ tag_data -> %datatag %eol newline
 {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[1].offset + data[1].text.length,
             data[0].line,
@@ -243,7 +242,7 @@ tag_end_sec -> %endtag %eol newline
 {% (data) => {
     return new Nodes.KeywordNode(
         data[0].value,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[1].offset + data[1].text.length,
             data[0].line,
@@ -270,7 +269,7 @@ double_quote_string -> %dblquote %string:? %dblquote
 {% data => { 
     return new Nodes.StringNode(
         data[1]?data[1].text:null, 
-        new ASTLocation(
+        new ASTRange(
             data[0].offset,
             data[2].offset + data[2].text.length,
             data[0].line,
@@ -282,7 +281,7 @@ single_quote_string -> %snglquote %string:? %snglquote
 {% data => { 
     return new Nodes.StringNode(
         data[1]?data[1].text:null,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset,
             data[2].offset + data[2].text.length,
             data[0].line,
@@ -298,7 +297,7 @@ multiline_cmnt -> %cmnt_strt newline (cmnt_content newline):* %cmnt_end
     }
     return new Nodes.CommentNode(
         d,
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[3].offset + data[3].text.length,
             data[0].line,
@@ -310,7 +309,7 @@ singleline_cmnt -> %cmnt_strt _ cmnt_content _ %cmnt_end
 {% (data) => {
     return new Nodes.CommentNode(
         data[2],
-        new ASTLocation(
+        new ASTRange(
             data[0].offset,
             data[4].offset + data[4].text.length,
             data[0].line,
@@ -332,7 +331,7 @@ enum_member -> "." %word "."
 {% data => { 
     return new Nodes.EnumMemberNode(
         data[1].value, 
-        new ASTLocation(
+        new ASTRange(
             data[0].offset, 
             data[2].offset + data[2].text.length,
             data[0].line,
@@ -363,7 +362,7 @@ decimal -> int "." int:?
     let text: string = data[0].value + "." + dec
     return new Nodes.NumberNode(
         parseFloat(text),
-        new ASTLocation(
+        new ASTRange(
             data[0].loc.start,
             data[2]?data[2].loc.end:data[0].loc.end+1,
             data[1].line,
@@ -373,7 +372,7 @@ decimal -> int "." int:?
 int -> %int 
 {% ([token]) => new Nodes.NumberNode(
         parseFloat(token.value),
-        new ASTLocation(
+        new ASTRange(
             token.offset,
             token.offset+token.text.length,
             token.line,token.line)) 

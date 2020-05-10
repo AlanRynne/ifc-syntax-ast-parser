@@ -1,4 +1,4 @@
-import { ASTType, ASTNode, ASTLocation } from "../index";
+import { ASTType, ASTNode, ASTRange } from "../index";
 
 export class CommentNode extends ASTNode {
     content: string;
@@ -9,7 +9,7 @@ export class CommentNode extends ASTNode {
      * @param loc Location range of the constructor
      * @param args Argument nodes of the constructor
      */
-    constructor(content: string, loc: ASTLocation) {
+    constructor(content: string, loc: ASTRange) {
         super(ASTType.Comment, loc);
         this.content = content;
     }

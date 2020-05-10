@@ -1,4 +1,4 @@
-import { ASTType, ASTNode, ASTLocation } from "../index";
+import { ASTType, ASTNode, ASTRange } from "../index";
 import { IVisitor } from "../visitor/IVisitor";
 
 export class EnumMemberNode extends ASTNode {
@@ -9,13 +9,9 @@ export class EnumMemberNode extends ASTNode {
      * Constructs an AST String node
      * @param text 
     **/
-    constructor(value: string, location: ASTLocation) {
+    constructor(value: string, location: ASTRange) {
         super(ASTType.Enum, location);
         this.value = value
-    }
-
-    public accept(v: IVisitor) {
-        v.visit(this)
     }
 }
 

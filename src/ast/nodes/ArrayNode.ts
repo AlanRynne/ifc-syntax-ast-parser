@@ -1,4 +1,4 @@
-import { ASTType, ASTNode, ASTLocation } from "../index";
+import { ASTType, ASTNode, ASTRange } from "../index";
 
 export class ArrayNode extends ASTNode {
     items: Array<ASTNode>;
@@ -9,7 +9,7 @@ export class ArrayNode extends ASTNode {
      * @param loc Location range of the constructor
      * @param args Argument nodes of the constructor
      */
-    constructor(items: Array<ASTNode>, loc: ASTLocation) {
+    constructor(items: Array<ASTNode>, loc: ASTRange) {
         super(ASTType.Array, loc);
         this.items = items;
     }
