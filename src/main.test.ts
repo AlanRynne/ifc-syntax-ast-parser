@@ -4,6 +4,9 @@ import path from 'path'
 import readline from 'readline'
 import { Ifc2Ast } from './main'
 import { DocumentNode } from './ast/nodes'
+import { ASTPositionVisitor, ASTDefinitionFinderVisitor, ASTDefinitionVisitor } from './ast/visitor/ASTVisitor'
+import { ASTPosition } from './ast/core/ASTPosition'
+import { ASTNode, ASTType } from './ast'
 
 
 const INDIR = "examples"
@@ -27,6 +30,7 @@ async function readLines(path: string) {
         input: stream,
         crlfDelay: Infinity
     });
+    // Get document lines lines
     let lines = await new Promise<string[]>((resolve, reject) => {
         let lines: string[] = []
         stream.once('error', (err) => reject(err))
@@ -38,11 +42,21 @@ async function readLines(path: string) {
             resolve(lines)
         });
     })
+    // Run parser
     let astParser = new Ifc2Ast()
-    return astParser.parseIfcFile(lines, true)
+    let node = await astParser.parseIfcFile(lines, true)
         .then((node) => {
             return node
         }).catch((err) => {
             throw err
         })
+    let pos = new ASTPosition(17, 37)
+    let pos2 = new ASTPosition(17, 28)
+
+    let posNode = new ASTPositionVisitor().visit(node, pos) as ASTNode
+    let posNode2 = new ASTPositionVisitor().visit(node, pos2) as ASTNode
+    let defFind = new ASTDefinitionFinderVisitor().visit(node, 1)
+    let docDefs = new ASTDefinitionVisitor().visit(node)
+
+    return node
 }

@@ -21,7 +21,7 @@ Some multiline comment
 ***/
 
 
-#2=IFCNULLTEST($,*);
+#555=IFCNULLTEST($,*);
 /* A single line comment */
 
 
@@ -29,7 +29,7 @@ Some multiline comment
 
 #4=IFCNESTEDENTITYTEST(IFCLABEL("TEST"),$);
 #5=IFCENUMVALUETEST(#3,#4,.ENUMVAL.,.ENUMVAL2.);
-#6=IFCNESTEDPARENTHESIS((0,0,1),(),/* XX */());
+#6=IFCNESTEDPARENTHESIS((0,0,1,.ENUM.),(),/* XX */());
 ENDSEC;
 
 END-ISO-10303-21;

@@ -3,8 +3,8 @@
 @{% 
 import { lexer } from './tokens'
 import { first } from './functions'
-import * as Nodes from "@/ast/nodes";
-import { ASTType, ASTNode, ASTRange } from "@/ast/index";
+import * as Nodes from "../ast/nodes";
+import { ASTType, ASTNode, ASTRange } from "../ast/index";
 
 %}
 
@@ -39,10 +39,10 @@ header_section -> tag_header _ header_entities _ tag_end_sec
         data[0],
         data[2],
         new ASTRange(
-            data[0].loc.start,
-            data[4].loc.end,
-            data[0].loc.startLine,
-            data[4].loc.startLine
+            data[0].loc.start.character,
+            data[4].loc.end.character,
+            data[0].loc.end.line,
+            data[4].loc.end.line
         )
     )
 }%}
@@ -114,10 +114,10 @@ data_section -> tag_data _ data_entities:? _ tag_end_sec {% (data) => {
         data[0],
         data[2],
         new ASTRange(
-            data[0].loc.start,
-            data[4].loc.end,
-            data[0].line,
-            data[4].line))
+            data[0].loc.start.character,
+            data[4].loc.end.character,
+            data[0].loc.start.line,
+            data[4].loc.end.line))
 }%}
 
 
@@ -137,9 +137,9 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
         data[0],
         data[4],
         new ASTRange(
-            data[0].loc.start,
+            data[0].loc.start.character,
             data[5].offset + data[5].text.length,
-            data[0].loc.startLine,
+            data[0].loc.start.line,
             data[5].line)
     )
 } %} | comment _ newline {% first %}
@@ -147,8 +147,16 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
 
 # Resolves an IFC constructor function
 data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) => {
+    let name = new Nodes.StringNode(
+        data[1]?data[1].text:null,
+        new ASTRange(
+            data[0].offset,
+            data[0].offset + data[0].text.length,
+            data[0].line,
+            data[0].line)
+        ) 
     return new Nodes.ConstructorNode(
-        data[0].value,
+        name,
         data[3],new ASTRange(
             data[0].offset,
             data[4].offset + data[4].text.length,
@@ -341,7 +349,9 @@ enum_member -> "." %word "."
 number -> "-":? (scinum | decimal | int) 
 {% data => {
     let numAST = data[1][0]
-    if(data[0]) numAST.value = -numAST.value
+    if(data[0]) {
+        numAST.value = -numAST.value
+    }
     return numAST
 }%}
 
@@ -352,7 +362,7 @@ scinum -> decimal %scisuff
     let txt = dec.value + suf.value
     let num: number = +txt
     dec.value = num;
-    dec.loc.end += suf.text.length
+    dec.loc.end.character += suf.text.length
     return dec
 }%}
 
@@ -363,8 +373,8 @@ decimal -> int "." int:?
     return new Nodes.NumberNode(
         parseFloat(text),
         new ASTRange(
-            data[0].loc.start,
-            data[2]?data[2].loc.end:data[0].loc.end+1,
+            data[0].loc.start.character,
+            data[2] ? data[2].loc.end.character : data[0].loc.end.character+1,
             data[1].line,
             data[1].line))
 }%}
@@ -375,7 +385,8 @@ int -> %int
         new ASTRange(
             token.offset,
             token.offset+token.text.length,
-            token.line,token.line)) 
+            token.line,
+            token.line)) 
 %}
 
 

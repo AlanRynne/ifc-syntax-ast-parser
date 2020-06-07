@@ -7,37 +7,40 @@ export class ASTDefinitionFinderVisitor implements IVisitor {
 
     visit(node: ASTNode, refNum: number): any {
         if (node instanceof nodes.AssignmentNode) {
-            if (node.name.accept(this, refNum) == true)
+            if (node.name.accept(this, refNum))
                 return node
         } else if (node instanceof nodes.DocumentNode) {
-            let secs: any[] = []
+            let result: any = undefined
             node.sections.forEach(sec => {
                 let sectionResult = sec.accept(this, refNum)
-                if (sectionResult) secs.push(...sectionResult)
+                if (sectionResult)
+                    result = sectionResult;
             })
-            return secs
+            return result
         } else if (node instanceof nodes.VariableNode) {
             if (node.id == refNum) {
-                return true
+                return node
             }
         } else if (node instanceof nodes.SectionNode) {
             let keyword = node.name.accept(this, refNum)
             if (keyword == "DATA") {
-                let result: any[] = []
+                let result: any = undefined
                 node.children.forEach(child => {
                     let d = child.accept(this, refNum)
-                    if (d) result.push(d)
+                    if (d)
+                        result = d
                 })
                 return result
             }
+        } else if (node instanceof nodes.KeywordNode) {
+            return node.text
         } else {
-            console.log("Other node: " + node.constructor.name)
+            //console.log("Other node: " + node.constructor.name)
         }
     }
 }
 
 export class ASTDefinitionVisitor implements IVisitor {
-
     visit(node: ASTNode): nodes.AssignmentNode[] | void {
         if (node instanceof nodes.AssignmentNode) {
             return [node]
@@ -58,41 +61,60 @@ export class ASTDefinitionVisitor implements IVisitor {
                 })
                 return result
             }
-        } else {
-            // console.log("Other node: " + node.constructor.name)
         }
     }
 }
+
+// Finds the closest matching ASTNode to the specified position.
 export class ASTPositionVisitor implements IVisitor {
-    visit(node: ASTNode, position: ASTPosition): any {
-        if (node.loc.contains(position))
-            if (node instanceof nodes.AssignmentNode) {
-                if (node.name.accept(this, position) == true)
-                    return node
-            } else if (node instanceof nodes.DocumentNode) {
-                node.loc.contains(position)
-                let secs: any[] = []
+    visit(node: ASTNode, position: ASTPosition) {
+        var containsPosition = node.loc.contains(position)
+        if (containsPosition) {
+            if (node instanceof nodes.DocumentNode) {
+                let result = null;
                 node.sections.forEach(sec => {
                     let sectionResult = sec.accept(this, position)
-                    if (sectionResult) secs.push(...sectionResult)
+                    if (sectionResult)
+                        result = sectionResult
                 })
-                return secs
-            } else if (node instanceof nodes.VariableNode) {
-
-            } else if (node instanceof nodes.KeywordNode) {
-                return node.text
+                return result
             } else if (node instanceof nodes.SectionNode) {
-                let keyword = node.name.accept(this, position)
-                if (keyword == "DATA") {
-                    let result: any[] = []
-                    node.children.forEach(child => {
-                        let d = child.accept(this, position)
-                        if (d) result.push(d)
-                    })
-                    return result
-                }
+                let result = null
+                node.children.forEach(child => {
+                    let d = child.accept(this, position)
+                    if (d) result = d;
+                })
+                return result
+            } else if (node instanceof nodes.AssignmentNode) {
+                let ref = node.name.accept(this, position)
+                if (ref)
+                    return ref
+                let val = node.value.accept(this, position)
+                if (val)
+                    return val
+            } else if (node instanceof nodes.ConstructorNode) {
+                let name = node.name.accept(this, position);
+                if (name) return name;
+                let result: any = null;
+                node.args.forEach(arg => {
+                    let argResult = arg.accept(this, position)
+                    if (argResult)
+                        result = argResult;
+                })
+                return result
+            } else if (node instanceof nodes.ArrayNode) {
+                let result = null;
+                node.items.forEach(item => {
+                    let itemResult = item.accept(this, position)
+                    if (itemResult)
+                        result = itemResult;
+                })
+                return result;
             } else {
-                console.log("Other node: " + node.constructor.name)
+                return node;
             }
+        } else {
+            return null;
+        }
     }
 }

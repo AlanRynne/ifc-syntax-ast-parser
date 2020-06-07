@@ -1,8 +1,8 @@
 {
     "name": "ifc2ast",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "An abstract syntax tree generator for IFC files.",
-    "main": "src/main.ts",
+    "main": "out/main.js",
     "author": "Alan Rynne",
     "license": "MIT",
     "scripts": {
