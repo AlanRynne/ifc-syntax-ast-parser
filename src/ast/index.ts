@@ -1,12 +1,12 @@
-import { ASTLocation } from "./core/ASTLocation";
+import { ASTRange } from "./core/ASTRange";
 import { ASTNode } from "./core/ASTNode";
 import { ASTType } from "./core/ASTType";
-import { ASTVisitor } from "./visitor/ASTVisitor";
+import { ASTDefinitionFinderVisitor } from "./visitor/ASTVisitor";
 
 
 export {
-    ASTLocation,
+    ASTRange as ASTRange,
     ASTNode,
     ASTType,
-    ASTVisitor
+    ASTDefinitionFinderVisitor as ASTVisitor
 }

@@ -1,17 +1,17 @@
 import { ASTType, ASTNode, ASTRange } from "../index";
 import { IVisitor } from "../visitor/IVisitor";
 
-export class StringNode extends ASTNode {
+export class EnumMemberNode extends ASTNode {
 
-    text: string
+    value: string
 
     /**
      * Constructs an AST String node
      * @param text 
     **/
-    constructor(text: string, location: ASTRange) {
-        super(ASTType.String, location);
-        this.text = text
+    constructor(value: string, location: ASTRange) {
+        super(ASTType.Enum, location);
+        this.value = value
     }
 }
 

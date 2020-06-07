@@ -1,17 +1,17 @@
 import { ASTType, ASTNode, ASTRange } from "../index";
 import { IVisitor } from "../visitor/IVisitor";
 
-export class StringNode extends ASTNode {
+export class VariableNode extends ASTNode {
 
-    text: string
+    id: number
 
     /**
      * Constructs an AST String node
      * @param text 
     **/
-    constructor(text: string, location: ASTRange) {
-        super(ASTType.String, location);
-        this.text = text
+    constructor(id: number, location: ASTRange) {
+        super(ASTType.Variable, location);
+        this.id = id
     }
 }
 

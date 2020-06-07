@@ -1,8 +1,7 @@
 import { ASTType, ASTNode, ASTRange } from "../index";
 
-export class ConstructorNode extends ASTNode {
-    name: ASTNode;
-    args: Array<ASTNode>;
+export class CommentNode extends ASTNode {
+    content: string;
 
     /**
      * Constructs a new ASTNode representing a constructor function
@@ -10,9 +9,8 @@ export class ConstructorNode extends ASTNode {
      * @param loc Location range of the constructor
      * @param args Argument nodes of the constructor
      */
-    constructor(name: ASTNode, args: Array<ASTNode>, loc: ASTRange) {
-        super(ASTType.Constructor, loc);
-        this.name = name;
-        this.args = args;
+    constructor(content: string, loc: ASTRange) {
+        super(ASTType.Comment, loc);
+        this.content = content;
     }
 }

@@ -1,76 +1,62 @@
 import fs from 'fs'
-import readline from 'readline';
-import ifcGrammar from './main'
-import * as nearley from 'nearley'
+import dir from 'node-dir'
+import path from 'path'
+import readline from 'readline'
+import { Ifc2Ast } from './main'
+import { DocumentNode } from './ast/nodes'
+import { ASTPositionVisitor, ASTDefinitionFinderVisitor, ASTDefinitionVisitor } from './ast/visitor/ASTVisitor'
+import { ASTPosition } from './ast/core/ASTPosition'
+import { ASTNode, ASTType } from './ast'
 
 
+const INDIR = "examples"
+const OUTDIR = "results"
 
-describe('Unambiguity test', function () {
-    it('TestIFC-001.ifc', () => mainIfcParserTest("examples/TestIFC-001.ifc", "./results/ast-testifc.json"))
-    it('Model_001.ifc', () => mainIfcParserTest("examples/Model_001.ifc", "./results/ast-testifc.json"))
-    it('Model_002.ifc', () => mainIfcParserTest("examples/Model_002.ifc", "./results/ast-testifc.json"))
-})
+var files = dir.files(INDIR, { sync: true })
+var ifcFiles = files.filter((file) => path.extname(file) === ".ifc")
 
-describe('Line by line unambiguous test', () => {
-    it('TestIFC-001', () => {
-        return ParseIFCLineByLine("examples/TestIFC-001.ifc", "./results/ast-testifc.json")
-            .then((results) =>
-                expect(results.length).toBe(1))
-    });
-    it('Model_001', () => {
-        return ParseIFCLineByLine("examples/Model_001.ifc", "./results/ast-testifc.json")
-            .then((results) =>
-                expect(results.length).toBe(1))
-    });
-    it('Model_002', () => {
-        return ParseIFCLineByLine("examples/Model_002.ifc", "./results/ast-testifc.json")
-            .then((results) =>
-                expect(results.length).toBe(1))
-    });
-})
+describe("IFC files line by line", () => {
+    ifcFiles.forEach((file) => {
+        it(file, async () => {
+            const results = await readLines(file);
+            return expect(results).toBeInstanceOf(DocumentNode);
+        }, 10000)
+    })
+});
 
-function mainIfcParserTest(path: string, outPath: string) {
-    console.time('alltext');
-    var content = fs.readFileSync(path, "utf8");
-    const ifcParser = new nearley.Parser(nearley.Grammar.fromCompiled(ifcGrammar), { keepHistory: true })
-    ifcParser.feed(content)
-    console.timeEnd('alltext')
-    writeToPath(ifcParser.results, outPath);
-    expect(ifcParser.results.length).toBe(1);
-}
-
-function writeToPath(jsObj: any, path: string) {
-    fs.writeFile(
-        path,
-        JSON.stringify(jsObj, null, 4),
-        (err) => {
-            // In case of a error throw err. 
-            if (err) throw err;
-        })
-}
-async function ParseIFCLineByLine(path: string, outPath: string): Promise<any> {
-    return readLines(path)
-}
-
-async function readLines(path: string): Promise<any> {
+async function readLines(path: string) {
     const stream = fs.createReadStream(path)
     const rl = readline.createInterface({
         input: stream,
         crlfDelay: Infinity
     });
-    const ifcParser = new nearley.Parser(nearley.Grammar.fromCompiled(ifcGrammar))
-
-    return new Promise<boolean>(resolve => {
-        stream.once('error', _ => resolve(false))
-        rl.on('open', _ => console.time('byline'))
-        rl.on('line', line =>
-            ifcParser.feed(line)
-        );
-
+    // Get document lines lines
+    let lines = await new Promise<string[]>((resolve, reject) => {
+        let lines: string[] = []
+        stream.once('error', (err) => reject(err))
+        rl.on('line', (line) => {
+            lines.push(line)
+        });
         rl.on('close', _ => {
             console.timeEnd('byline')
-            resolve(ifcParser.results)
-        }
-        );
-    });
+            resolve(lines)
+        });
+    })
+    // Run parser
+    let astParser = new Ifc2Ast()
+    let node = await astParser.parseIfcFile(lines, true)
+        .then((node) => {
+            return node
+        }).catch((err) => {
+            throw err
+        })
+    let pos = new ASTPosition(17, 37)
+    let pos2 = new ASTPosition(17, 28)
+
+    let posNode = new ASTPositionVisitor().visit(node, pos) as ASTNode
+    let posNode2 = new ASTPositionVisitor().visit(node, pos2) as ASTNode
+    let defFind = new ASTDefinitionFinderVisitor().visit(node, 1)
+    let docDefs = new ASTDefinitionVisitor().visit(node)
+
+    return node
 }
