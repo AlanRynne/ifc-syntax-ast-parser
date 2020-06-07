@@ -148,7 +148,7 @@ data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):
 # Resolves an IFC constructor function
 data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) => {
     let name = new Nodes.StringNode(
-        data[1]?data[1].text:null,
+        data[0]?data[0].text:null,
         new ASTRange(
             data[0].offset,
             data[0].offset + data[0].text.length,

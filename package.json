@@ -1,15 +1,26 @@
 {
-    "name": "ifc2ast",
+    "name": "@alanrynne/ifc-syntax-express-parser",
     "version": "0.1.1",
     "description": "An abstract syntax tree generator for IFC files.",
     "main": "out/main.js",
+    "types": "out/main.d.js",
+    "files": [
+        "out/**/*"
+    ],
     "author": "Alan Rynne",
     "license": "MIT",
     "scripts": {
         "build": "nearleyc ./src/grammar/grammar.ne --out ./src/grammar/ifc.ts && tsc",
-        "test": "npm run build && jest",
+        "test": "jest",
+        "pretest": "npm run build",
         "coverage": "jest --coverage",
-        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html"
+        "diagrams": "nearley-railroad ./src/grammar/grammar.ne -o ./docs/ifc-diagrams.html",
+        "prepare": "npm run build",
+        "prepublishOnly": "npm test"
+    },
+    "repository": {
+        "type": "git",
+        "url": ""
     },
     "keywords": [
         "Industry Foundation Classes",
