@@ -20,6 +20,7 @@ DATA;
 Some multiline comment
 ***/
 
+#1245= IFCSHAPEREPRESENTATION(#107,'Body','SweptSolid',(#1239));
 
 #555=IFCNULLTEST($,*);
 /* A single line comment */
