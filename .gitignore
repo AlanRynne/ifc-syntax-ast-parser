@@ -10,3 +10,4 @@ coverage/**
 !coverage/.gitkeep
 
 # Ignore ifcKit examples since they can be found online
+.DS_Store

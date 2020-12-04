@@ -130,7 +130,7 @@ DATA;
 /* Define the component for wall, which includes wall framing and drywall */
 #49= IFCWALLTYPE('18dyITGxr8vvBzWasHOIhB',$,'Wood Framed Wall',$,$,$,$,$,$,.NOTDEFINED.);
 
-/* The site contains the wall occurrence */
+/* The site contains the wall occurreknce */
 #52= IFCRELCONTAINEDINSPATIALSTRUCTURE('3GkTYDE011eOE5MPsYgvmO',$,$,$,(#123),#44);
 
 /* The material of the studs and tracks is defined a profile of 2x4 wood (2x4 refers to nominal dimensions for 1.5 inches by 3.5 inches) */

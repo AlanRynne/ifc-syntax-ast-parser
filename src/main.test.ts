@@ -7,6 +7,7 @@ import { DocumentNode } from './ast/nodes'
 import { ASTPositionVisitor, ASTDefinitionFinderVisitor, ASTDefinitionVisitor } from './ast/visitor/ASTVisitor'
 import { ASTPosition } from './ast/core/ASTPosition'
 import { ASTNode, ASTType } from './ast'
+import { debug } from 'console'
 
 
 const INDIR = "examples"
@@ -18,9 +19,10 @@ var ifcFiles = files.filter((file) => path.extname(file) === ".ifc")
 describe("IFC files line by line", () => {
     ifcFiles.forEach((file) => {
         it(file, async () => {
+            debug(file)
             const results = await readLines(file);
             return expect(results).toBeInstanceOf(DocumentNode);
-        }, 10000)
+        }, 1000)
     })
 });
 
