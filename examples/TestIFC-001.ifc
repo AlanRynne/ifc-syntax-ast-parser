@@ -25,7 +25,7 @@ Some multiline comment
 #555=IFCNULLTEST($,*);
 /* A single line comment */
 
-
+adfa
 #3=IFCREFTEST(#1,#23522);
 
 #4=IFCNESTEDENTITYTEST(IFCLABEL("TEST"),$);

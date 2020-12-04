@@ -57,8 +57,13 @@ export class Ifc2Ast {
             this.lastState = this.parser.save()
           } catch (error) {
             if (onError) onError(error)
+            var state = this.lastState
+            this.reset()
+            this.lastState = state
+            this.lastState.lexerState.line++
+            this.parser.restore(this.lastState)
           }
-        })
+        }, this)
         resolve(this.parser.results[0])
       } catch (error) {
         // Something unexpected happened!
