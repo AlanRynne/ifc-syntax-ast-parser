@@ -55,7 +55,7 @@ async function readLines(path: string) {
   let astParser = new Ifc2Ast()
   let node = await astParser
     .parseIfcFile(lines, true, err => {
-      console.warn(err.message ?? err)
+      console.warn(err.token ?? err)
     })
     .then(node => {
       return node

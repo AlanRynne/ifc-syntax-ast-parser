@@ -49,7 +49,16 @@ export class Ifc2Ast {
           try {
             if (line.length > this.config.maxLineLength) {
               // Report skipped line
-              if (onError) onError(`Line ${lineNum} is too long to be parsed`)
+              if (onError)
+                onError({
+                  type: "err",
+                  value: null,
+                  text: `Line ${lineNum} is too long to be parsed`,
+                  offset: 0,
+                  lineBreaks: 1,
+                  line: lineNum,
+                  col: 1
+                })
               return
             }
             let txt = addTrailingNewLine ? line + "\n" : line
