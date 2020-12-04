@@ -11,12 +11,22 @@ import { debug } from "console"
 // The compiled nearley grammar
 export default ifcGrammar
 
+export class Ifc2AstConfig {
+  maxLineLength: number
+
+  constructor() {
+    this.maxLineLength = 10000
+  }
+}
+
 // The class that does all the heavy lifting.
 export class Ifc2Ast {
   private lastState: any
   private parser: any
+  public config: Ifc2AstConfig
 
-  constructor() {
+  constructor(config: Ifc2AstConfig = new Ifc2AstConfig()) {
+    this.config = config
     this.reset()
   }
 
@@ -37,7 +47,7 @@ export class Ifc2Ast {
           lineNum += 1
 
           try {
-            if (line.length > 10000) {
+            if (line.length > this.config.maxLineLength) {
               // Report skipped line
               if (onError) onError(`Line ${lineNum} is too long to be parsed`)
               return
