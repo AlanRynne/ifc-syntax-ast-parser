@@ -166,13 +166,12 @@ data_entity_constructor -> %word _ %lparen constructor_values %rparen {% (data) 
 
 
 # Resolves the arguments of a constructor function (but could be any function if need be)
-constructor_values -> constructor_value (_ %separator _ constructor_value):* {% (data) => {
-    var d = [data[0]];
-    for(let i in data[1]) {
-        d.push(data[1][i][3])
-    }
-    return d;
-}%} | null
+constructor_values -> constructor_value | constructor_values _ %separator _ constructor_value {% d => {
+    var values = d[0]
+    values.push(d[4])
+    return values
+}%}  | null
+
 
 
 constructor_value -> singleline_cmnt _ constructor_value_raw  {% (data) => data[2] %} | constructor_value_raw {% first %}
