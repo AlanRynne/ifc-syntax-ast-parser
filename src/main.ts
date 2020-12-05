@@ -51,13 +51,14 @@ export class Ifc2Ast {
               // Report skipped line
               if (onError)
                 onError({
-                  type: "err",
-                  value: null,
-                  text: `Line ${lineNum} is too long to be parsed`,
+                  type: "long",
+                  value: `Line ${lineNum} is too long to be parsed`,
+                  text: line,
                   offset: 0,
                   lineBreaks: 1,
                   line: lineNum,
-                  col: 1
+                  col: 1,
+                  toString: () => `Line ${lineNum} is too long to be parsed`
                 })
               return
             }

@@ -18,7 +18,7 @@ FILE_NAME(
 /* NOTE schema name to be replaced with 'IFC4' after the final release  ------------------------ */
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
-asfd
+
 DATA;
 /* --------------------------------------------------------------------------------------------- */
 /* general entities required for all IFC data sets, defining the context for the exchange ------ */
