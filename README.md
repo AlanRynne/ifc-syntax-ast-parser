@@ -1,9 +1,9 @@
-# IFC to AST
+# IFC to AST Parser based on Nearley.js
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/AlanRynne/ifc2ast)
-[![Build Status](https://travis-ci.com/AlanRynne/ifc2ast.svg?branch=develop)](https://travis-ci.com/AlanRynne/ifc2ast)
-[![codecov](https://codecov.io/gh/AlanRynne/ifc2ast/branch/develop/graph/badge.svg)](https://codecov.io/gh/AlanRynne/ifc2ast)
-![GitHub](https://img.shields.io/github/license/AlanRynne/ifc2ast)
+[![Build Status](https://travis-ci.com/AlanRynne/ifc-syntax-ast-parser.svg?branch=develop)](https://travis-ci.com/AlanRynne/ifc-syntax-ast-parser)
+[![codecov](https://codecov.io/gh/AlanRynne/ifc2ast/branch/develop/graph/badge.svg)](https://codecov.io/gh/AlanRynne/ifc-syntax-ast-parser)
+![GitHub](https://img.shields.io/github/license/AlanRynne/ifc-syntax-ast-parser)
 
 **_IFC2AST_** is a helper package for the IFC Language Server I am developing as a complete overhaul of the [IFC Syntax](https://github.com/AlanRynne/ifc-syntax) extension for VSCode.
 

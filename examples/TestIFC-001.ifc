@@ -20,16 +20,18 @@ DATA;
 Some multiline comment
 ***/
 
+#1245= IFCSHAPEREPRESENTATION(#107,'Body','SweptSolid',(#1239));
 
 #555=IFCNULLTEST($,*);
 /* A single line comment */
-
 
 #3=IFCREFTEST(#1,#23522);
 
 #4=IFCNESTEDENTITYTEST(IFCLABEL("TEST"),$);
 #5=IFCENUMVALUETEST(#3,#4,.ENUMVAL.,.ENUMVAL2.);
 #6=IFCNESTEDPARENTHESIS((0,0,1,.ENUM.),(),/* XX */());
+
+
 ENDSEC;
 
 END-ISO-10303-21;

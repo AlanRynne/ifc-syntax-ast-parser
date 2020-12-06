@@ -4,9 +4,9 @@
 name: Node.js Package
 
 on:
-  release:
-    types:
-      - created
+  push:
+    tags:
+      - v*
 
 jobs:
   build:
@@ -17,7 +17,12 @@ jobs:
         with:
           node-version: 12
       - run: npm ci
-      - run: npm test
+      - run: npm run build
+      - run: npm run coverage
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/clover.xml # optional
+        name: Push coverage to Codecov.io
   publish-gpr:
     needs: build
     runs-on: ubuntu-latest
