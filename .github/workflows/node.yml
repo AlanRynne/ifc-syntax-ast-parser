@@ -19,4 +19,8 @@ jobs:
         with:
           node-version: 12
       - run: npm ci
-      - run: npm test
+      - run: npm build
+      - run: npm run coverage
+      - uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage/clover.xml # optional
