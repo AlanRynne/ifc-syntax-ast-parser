@@ -49,15 +49,11 @@ header_section -> tag_header _ header_entities _ tag_end_sec
 
 
 # Resolves a collection of header entities
-header_entities -> header_entity (_ header_entity):* 
-{% (data) => {
-    var d = [data[0]]
-    for(let i in data[1]){
-        d.push(data[1][i][1])
-    }
-    return d;
+header_entities -> header_entity | header_entities _ header_entity {% d => {
+    var values = d[0]
+    values.push(d[2])
+    return values
 }%}
-
 
 # Resolves a header entity declaration
 header_entity -> comment _ newline {% first %}
@@ -74,16 +70,13 @@ header_entity -> comment _ newline {% first %}
 
 
 # Unfolds the nested list of header inputs into a single list
-header_inputs -> header_input (spls:? _ %separator spls:? _ header_input):*
-{% data => {
-    var d = Array.isArray(data[0]) ? data[0] : [data[0]]
-    for(let i in data[1]){
-        let di = data[1][i][5]
-        if(Array.isArray(di)) d.push(...di)
-        else d.push(di)
-    }
-    return d;
-} %}
+header_inputs -> header_input {% d => Array.isArray(d[0]) ? d[0] : [d[0]] %} 
+               | header_inputs spls:? _ %separator spls:? _ header_input {% d => {
+                   var values = d[0]
+                   values.push(d[6])
+                   return values
+               }%}
+
 
 header_input -> singleline_cmnt _ header_input_raw {% (data) => [data[0],data[2]] %}
                 | header_input_raw {% first %}
@@ -122,14 +115,11 @@ data_section -> tag_data _ data_entities:? _ tag_end_sec {% (data) => {
 
 
 # Unfolds a nested list of entities into a single list
-data_entities -> data_entity (_ data_entity):* {% (data) => {
-    var d = [data[0]]
-    for(let i in data[1]){
-        d.push(data[1][i][1])
-    }
-    return d;
-} %}
-
+data_entities -> data_entity  | data_entities _ data_entity {% d => {
+    var values = d[0]
+    values.push(d[2])
+    return values
+}%}
 
 # Resolves an IFC entity declaration
 data_entity -> var _ %assign _ data_entity_constructor %eol (_ singleline_cmnt):? _ newline {% (data) => {
