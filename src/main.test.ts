@@ -63,6 +63,14 @@ async function readLines(path: string) {
     .catch(err => {
       throw err
     })
+    
+  let pos = new ASTPosition(17, 37)
+  let pos2 = new ASTPosition(17, 28)
+
+  let posNode = new ASTPositionVisitor().visit(node, pos) as ASTNode
+  let posNode2 = new ASTPositionVisitor().visit(node, pos2) as ASTNode
+  let defFind = new ASTDefinitionFinderVisitor().visit(node, 1)
+  let docDefs = new ASTDefinitionVisitor().visit(node)
 
   return node
 }
