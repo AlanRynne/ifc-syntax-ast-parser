@@ -1,5 +1,19 @@
 # IFC to AST Parser based on Nearley.js
 
+> :warning: This repo has been deprecated in favour of the new monorepo I created with all my IFC related code. You can check it out at:
+> 
+> [IFC Developer Tools](https://github.com/AlanRynne/ifc-developer-tools)
+> 
+> It includes:
+> - `ifc` and `express` parsers
+> - The IFC Syntax VSCode Extension code
+> - The IFC Language Server
+> - An IFC to Typescript code generator
+> - An IFC documentation extraction tool
+> 
+> See you there!!
+
+
 ![GitHub last commit](https://img.shields.io/github/last-commit/AlanRynne/ifc2ast)
 [![Build Status](https://travis-ci.com/AlanRynne/ifc-syntax-ast-parser.svg?branch=develop)](https://travis-ci.com/AlanRynne/ifc-syntax-ast-parser)
 [![codecov](https://codecov.io/gh/AlanRynne/ifc-syntax-ast-parser/branch/master/graph/badge.svg?token=fFivIa3yrf)](https://codecov.io/gh/AlanRynne/ifc-syntax-ast-parser)
